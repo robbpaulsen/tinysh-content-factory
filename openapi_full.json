@@ -1,0 +1,1684 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "summary": "Root",
+                "operationId": "root__head",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "head": {
+                "summary": "Root",
+                "operationId": "root__head",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Healthcheck",
+                "operationId": "healthcheck_health_head",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "head": {
+                "summary": "Healthcheck",
+                "operationId": "healthcheck_health_head",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/audio-tools/transcribe": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Transcribe",
+                "description": "Transcribe audio file to text.",
+                "operationId": "transcribe_api_v1_media_audio_tools_transcribe_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_transcribe_api_v1_media_audio_tools_transcribe_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/audio-tools/tts/kokoro/voices": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Get Kokoro Voices",
+                "operationId": "get_kokoro_voices_api_v1_media_audio_tools_tts_kokoro_voices_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/audio-tools/tts/kokoro": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Generate Kokoro Tts",
+                "description": "Generate audio from text using specified TTS engine.",
+                "operationId": "generate_kokoro_tts_api_v1_media_audio_tools_tts_kokoro_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_generate_kokoro_tts_api_v1_media_audio_tools_tts_kokoro_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/audio-tools/tts/chatterbox": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Generate Chatterbox Tts",
+                "description": "Generate audio from text using Chatterbox TTS.",
+                "operationId": "generate_chatterbox_tts_api_v1_media_audio_tools_tts_chatterbox_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_generate_chatterbox_tts_api_v1_media_audio_tools_tts_chatterbox_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/storage": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Upload File",
+                "description": "Upload a file and return its ID.",
+                "operationId": "upload_file_api_v1_media_storage_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_upload_file_api_v1_media_storage_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/storage/{file_id}": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Download File",
+                "description": "Download a file by its ID.",
+                "operationId": "download_file_api_v1_media_storage__file_id__get",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Delete File",
+                "description": "Delete a file by its",
+                "operationId": "delete_file_api_v1_media_storage__file_id__delete",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/storage/{file_id}/status": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "File Status",
+                "description": "Check the status of a file by its ID.",
+                "operationId": "file_status_api_v1_media_storage__file_id__status_get",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/merge": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Merge Videos",
+                "description": "Merge multiple videos into one.",
+                "operationId": "merge_videos_api_v1_media_video_tools_merge_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_merge_videos_api_v1_media_video_tools_merge_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/fonts": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "List Fonts",
+                "operationId": "list_fonts_api_v1_media_fonts_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/generate/tts-captioned-video": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Generate Captioned Video",
+                "description": "Generate a captioned video from text and background image.",
+                "operationId": "generate_captioned_video_api_v1_media_video_tools_generate_tts_captioned_video_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_generate_captioned_video_api_v1_media_video_tools_generate_tts_captioned_video_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/add-colorkey-overlay": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Add Colorkey Overlay",
+                "description": "Overlay a video on a video with the specified colorkey and intensity",
+                "operationId": "add_colorkey_overlay_api_v1_media_video_tools_add_colorkey_overlay_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_add_colorkey_overlay_api_v1_media_video_tools_add_colorkey_overlay_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/extract-frame/{video_id}": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Extract Frame",
+                "description": "Extract a frame from a video at a specified timestamp.\n\nArgs:\n    video_id: Video ID to extract frame from\n    timestamp: Optional timestamp in seconds to extract frame from (default: first frame)",
+                "operationId": "extract_frame_api_v1_media_video_tools_extract_frame__video_id__get",
+                "parameters": [
+                    {
+                        "name": "video_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Video Id"
+                        }
+                    },
+                    {
+                        "name": "timestamp",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Timestamp in seconds to extract frame from (default: 1.0)",
+                            "default": 1.0,
+                            "title": "Timestamp"
+                        },
+                        "description": "Timestamp in seconds to extract frame from (default: 1.0)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/extract-frames": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Extract Frame From Url",
+                "operationId": "extract_frame_from_url_api_v1_media_video_tools_extract_frames_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_extract_frame_from_url_api_v1_media_video_tools_extract_frames_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/video-tools/info/{file_id}": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Get Video Info",
+                "description": "Get information about a video file.",
+                "operationId": "get_video_info_api_v1_media_video_tools_info__file_id__get",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/audio-tools/info/{file_id}": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "media"
+                ],
+                "summary": "Get Audio Info",
+                "description": "Get information about an audio file.",
+                "operationId": "get_audio_info_api_v1_media_audio_tools_info__file_id__get",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/utils/youtube-transcript": {
+            "get": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "utils"
+                ],
+                "summary": "Get Youtube Transcript",
+                "description": "Get YouTube video transcript by video ID.",
+                "operationId": "get_youtube_transcript_api_v1_utils_youtube_transcript_get",
+                "parameters": [
+                    {
+                        "name": "video_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Video Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/utils/stitch-images": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "utils"
+                ],
+                "summary": "Stitch Images",
+                "description": "Stitch multiple images into one.",
+                "operationId": "stitch_images_api_v1_utils_stitch_images_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_stitch_images_api_v1_utils_stitch_images_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/utils/make-image-imperfect": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "utils"
+                ],
+                "summary": "Image Unaize",
+                "description": "Remove AI-generated artifacts from an image.",
+                "operationId": "image_unaize_api_v1_utils_make_image_imperfect_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_image_unaize_api_v1_utils_make_image_imperfect_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/utils/convert/pcm/wav": {
+            "post": {
+                "tags": [
+                    "api",
+                    "v1",
+                    "utils"
+                ],
+                "summary": "Convert Pcm To Wav",
+                "description": "Convert PCM audio to WAV format.",
+                "operationId": "convert_pcm_to_wav_api_v1_utils_convert_pcm_wav_post",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_convert_pcm_to_wav_api_v1_utils_convert_pcm_wav_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Body_add_colorkey_overlay_api_v1_media_video_tools_add_colorkey_overlay_post": {
+                "properties": {
+                    "video_id": {
+                        "type": "string",
+                        "title": "Video Id",
+                        "description": "Video ID to overlay"
+                    },
+                    "overlay_video_id": {
+                        "type": "string",
+                        "title": "Overlay Video Id",
+                        "description": "Overlay image ID"
+                    },
+                    "color": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Color",
+                        "description": "Set the color for which alpha will be set to 0 (full transparency). Use name of the color or hex code (e.g. 'red' or '#ff0000')",
+                        "default": "green"
+                    },
+                    "similarity": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Similarity",
+                        "description": "Set the radius from the key color within which other colors also have full transparency (Default: 0.1)",
+                        "default": 0.1
+                    },
+                    "blend": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Blend",
+                        "description": "Set how the alpha value for pixels that fall outside the similarity radius is computed (default: 0.1)",
+                        "default": 0.1
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "video_id",
+                    "overlay_video_id"
+                ],
+                "title": "Body_add_colorkey_overlay_api_v1_media_video_tools_add_colorkey_overlay_post"
+            },
+            "Body_convert_pcm_to_wav_api_v1_utils_convert_pcm_wav_post": {
+                "properties": {
+                    "pcm_id": {
+                        "type": "string",
+                        "title": "Pcm Id",
+                        "description": "ID of the PCM audio file to convert"
+                    },
+                    "sample_rate": {
+                        "type": "integer",
+                        "title": "Sample Rate",
+                        "description": "Sample rate of the PCM audio",
+                        "default": 24000
+                    },
+                    "channels": {
+                        "type": "integer",
+                        "title": "Channels",
+                        "description": "Number of audio channels (1 for mono, 2 for stereo)",
+                        "default": 1
+                    },
+                    "target_sample_rate": {
+                        "type": "integer",
+                        "title": "Target Sample Rate",
+                        "description": "Target sample rate for the WAV audio",
+                        "default": 44100
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pcm_id"
+                ],
+                "title": "Body_convert_pcm_to_wav_api_v1_utils_convert_pcm_wav_post"
+            },
+            "Body_extract_frame_from_url_api_v1_media_video_tools_extract_frames_post": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "description": "URL of the video to extract frame from"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount",
+                        "description": "Number of frames to extract from the video (default: 5)",
+                        "default": 5
+                    },
+                    "length_seconds": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Length Seconds",
+                        "description": "Length of the video in seconds (optional)"
+                    },
+                    "stitch": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stitch",
+                        "description": "Whether to stitch the frames into a single image (default: False)",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url"
+                ],
+                "title": "Body_extract_frame_from_url_api_v1_media_video_tools_extract_frames_post"
+            },
+            "Body_generate_captioned_video_api_v1_media_video_tools_generate_tts_captioned_video_post": {
+                "properties": {
+                    "background_id": {
+                        "type": "string",
+                        "title": "Background Id",
+                        "description": "Background image ID"
+                    },
+                    "text": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Text",
+                        "description": "Text to generate video from"
+                    },
+                    "width": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Width",
+                        "description": "Width of the video (default: 1080)",
+                        "default": 1080
+                    },
+                    "height": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Height",
+                        "description": "Height of the video (default: 1920)",
+                        "default": 1920
+                    },
+                    "audio_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Audio Id",
+                        "description": "Audio ID for the video (optional)"
+                    },
+                    "kokoro_voice": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Kokoro Voice",
+                        "description": "Voice for kokoro TTS (default: af_heart)",
+                        "default": "af_heart"
+                    },
+                    "kokoro_speed": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Kokoro Speed",
+                        "description": "Speed for kokoro TTS (default: 1.0)",
+                        "default": 1.0
+                    },
+                    "language": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Language",
+                        "description": "Language code for STT (optional, e.g. 'en', 'fr', 'de'), defaults to None (auto-detect language if audio_id is provided)"
+                    },
+                    "image_effect": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Image Effect",
+                        "description": "Effect to apply to the background image, options: ken_burns, pan (default: 'ken_burns')",
+                        "default": "ken_burns"
+                    },
+                    "caption_config_line_count": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 5.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Line Count",
+                        "description": "Number of lines per subtitle segment (default: 1)",
+                        "default": 1
+                    },
+                    "caption_config_line_max_length": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 200.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Line Max Length",
+                        "description": "Maximum characters per line (default: 1)",
+                        "default": 1
+                    },
+                    "caption_config_font_size": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 200.0,
+                                "minimum": 8.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Font Size",
+                        "description": "Font size for subtitles (default: 50)",
+                        "default": 120
+                    },
+                    "caption_config_font_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Font Name",
+                        "description": "Font family name (default: 'EB Garamond', see the available fonts form the /fonts endpoint)",
+                        "default": "Arial"
+                    },
+                    "caption_config_font_bold": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Font Bold",
+                        "description": "Whether to use bold font (default: True)",
+                        "default": true
+                    },
+                    "caption_config_font_italic": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Font Italic",
+                        "description": "Whether to use italic font (default: false)",
+                        "default": false
+                    },
+                    "caption_config_font_color": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Font Color",
+                        "description": "Font color in hex format (default: '#fff')",
+                        "default": "#fff"
+                    },
+                    "caption_config_subtitle_position": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "top",
+                                    "center",
+                                    "bottom"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Subtitle Position",
+                        "description": "Vertical position of subtitles (default: 'top')",
+                        "default": "top"
+                    },
+                    "caption_config_shadow_color": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Shadow Color",
+                        "description": "Shadow color in hex format (default: '#000')",
+                        "default": "#000"
+                    },
+                    "caption_config_shadow_transparency": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 1.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Shadow Transparency",
+                        "description": "Shadow transparency from 0.0 to 1.0 (default: 0.4)",
+                        "default": 0.4
+                    },
+                    "caption_config_shadow_blur": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 20.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Shadow Blur",
+                        "description": "Shadow blur radius (default: 10)",
+                        "default": 10
+                    },
+                    "caption_config_stroke_color": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Stroke Color",
+                        "description": "Stroke/outline color in hex format (default: '#000')"
+                    },
+                    "caption_config_stroke_size": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 10.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Caption Config Stroke Size",
+                        "description": "Stroke/outline size (default: 5)",
+                        "default": 5
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "background_id"
+                ],
+                "title": "Body_generate_captioned_video_api_v1_media_video_tools_generate_tts_captioned_video_post"
+            },
+            "Body_generate_chatterbox_tts_api_v1_media_audio_tools_tts_chatterbox_post": {
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "description": "Text to convert to speech"
+                    },
+                    "sample_audio_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Sample Audio Id",
+                        "description": "Sample audio ID for voice cloning"
+                    },
+                    "sample_audio_file": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "binary"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Sample Audio File",
+                        "description": "Sample audio file for voice cloning"
+                    },
+                    "exaggeration": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Exaggeration",
+                        "description": "Exaggeration factor for voice cloning, default: 0.5",
+                        "default": 0.5
+                    },
+                    "cfg_weight": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Cfg Weight",
+                        "description": "CFG weight for voice cloning, default: 0.5",
+                        "default": 0.5
+                    },
+                    "temperature": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Temperature",
+                        "description": "Temperature for voice cloning (default: 0.8)",
+                        "default": 0.8
+                    },
+                    "chunk_chars": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Chunk Chars",
+                        "description": "Max characters per chunk (default: 1024)",
+                        "default": 1024
+                    },
+                    "chunk_silence_ms": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Chunk Silence Ms",
+                        "description": "Silence duration between chunks in milliseconds (default: 350)",
+                        "default": 350
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "text"
+                ],
+                "title": "Body_generate_chatterbox_tts_api_v1_media_audio_tools_tts_chatterbox_post"
+            },
+            "Body_generate_kokoro_tts_api_v1_media_audio_tools_tts_kokoro_post": {
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "description": "Text to convert to speech"
+                    },
+                    "voice": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Voice",
+                        "description": "Voice name for kokoro TTS"
+                    },
+                    "speed": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Speed",
+                        "description": "Speed for kokoro TTS"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "text"
+                ],
+                "title": "Body_generate_kokoro_tts_api_v1_media_audio_tools_tts_kokoro_post"
+            },
+            "Body_image_unaize_api_v1_utils_make_image_imperfect_post": {
+                "properties": {
+                    "image_id": {
+                        "type": "string",
+                        "title": "Image Id",
+                        "description": "ID of the image to unaize"
+                    },
+                    "enhance_color": {
+                        "type": "number",
+                        "title": "Enhance Color",
+                        "description": "Strength of the color enhancement (0-2). 0 means black and white, 1 means no change, 2 means full color enhancement"
+                    },
+                    "enhance_contrast": {
+                        "type": "number",
+                        "title": "Enhance Contrast",
+                        "description": "Strength of the contrast enhancement (0-2)"
+                    },
+                    "noise_strength": {
+                        "type": "integer",
+                        "title": "Noise Strength",
+                        "description": "Strength of the noise to apply to the image (0-100)",
+                        "default": 0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "image_id"
+                ],
+                "title": "Body_image_unaize_api_v1_utils_make_image_imperfect_post"
+            },
+            "Body_merge_videos_api_v1_media_video_tools_merge_post": {
+                "properties": {
+                    "video_ids": {
+                        "type": "string",
+                        "title": "Video Ids",
+                        "description": "List of video IDs to merge"
+                    },
+                    "background_music_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Background Music Id",
+                        "description": "Background music ID (optional)"
+                    },
+                    "background_music_volume": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Background Music Volume",
+                        "description": "Volume for background music (0.0 to 1.0)",
+                        "default": 0.5
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "video_ids"
+                ],
+                "title": "Body_merge_videos_api_v1_media_video_tools_merge_post"
+            },
+            "Body_stitch_images_api_v1_utils_stitch_images_post": {
+                "properties": {
+                    "image_urls": {
+                        "type": "string",
+                        "title": "Image Urls",
+                        "description": "Comma-separated list of image URLs to stitch together"
+                    },
+                    "max_width": {
+                        "type": "integer",
+                        "title": "Max Width",
+                        "description": "Maximum width of the final stitched image",
+                        "default": 1920
+                    },
+                    "max_height": {
+                        "type": "integer",
+                        "title": "Max Height",
+                        "description": "Maximum height of the final stitched image",
+                        "default": 1080
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "image_urls"
+                ],
+                "title": "Body_stitch_images_api_v1_utils_stitch_images_post"
+            },
+            "Body_transcribe_api_v1_media_audio_tools_transcribe_post": {
+                "properties": {
+                    "audio_file": {
+                        "type": "string",
+                        "format": "binary",
+                        "title": "Audio File",
+                        "description": "Audio file to transcribe"
+                    },
+                    "language": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Language",
+                        "description": "Language code (optional)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "audio_file"
+                ],
+                "title": "Body_transcribe_api_v1_media_audio_tools_transcribe_post"
+            },
+            "Body_upload_file_api_v1_media_storage_post": {
+                "properties": {
+                    "file": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "binary"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "File",
+                        "description": "File to upload"
+                    },
+                    "url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url",
+                        "description": "URL of the file to upload (optional)"
+                    },
+                    "media_type": {
+                        "type": "string",
+                        "enum": [
+                            "image",
+                            "video",
+                            "audio"
+                        ],
+                        "title": "Media Type",
+                        "description": "Type of media being uploaded"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "media_type"
+                ],
+                "title": "Body_upload_file_api_v1_media_storage_post"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}

@@ -74,11 +74,14 @@ Story Content:
 Instructions:
 - Extract the core lesson or message from this story
 - Create an inspiring, motivational narrative
-- Keep it concise (60-90 seconds when spoken)
+- TARGET LENGTH: 15-45 seconds when spoken (480-1440 tokens)
+- For YouTube Shorts: Keep between 15s minimum and 45s maximum
 - Use powerful, emotional language
 - Make it relatable and actionable
 - Write in second person ("you") to engage the audience
 - Do NOT include any <think> tags or meta-commentary
+
+IMPORTANT: Stay within 480-1440 tokens (15-45 seconds). Gemini measures 32 tokens = 1 second of speech.
 
 Generate only the motivational speech text, nothing else."""
 
@@ -122,7 +125,7 @@ Generate only the motivational speech text, nothing else."""
         """Synchronous version of script generation (for thread pool)."""
         logger.info("Creating video script with scenes and image prompts")
 
-        prompt = f"""You are a video script creator. Given a motivational speech, break it into 5-8 scenes.
+        prompt = f"""You are a video script creator for YouTube Shorts (15-45 seconds). Given a motivational speech, break it into 5-8 scenes.
 
 Motivational Speech:
 {motivational_text}
@@ -130,8 +133,21 @@ Motivational Speech:
 Art Style Context:
 {art_style}
 
+DURATION REQUIREMENTS:
+- Total video: 15-45 seconds (Shorts format)
+- Each scene: 2-6 seconds of speech
+- Total speech should match motivational text length
+- Gemini token count: 32 tokens = 1 second
+
+MANDATORY SCRIPT STRUCTURE:
+The script must adopt a friendly, energetic, and engaging tone suitable for YouTube. The final script must follow this structure:
+
+1. [OPENING HOOK]: A brief (max 5 seconds) energetic welcome and introduction to the video's main topic.
+2. [MAIN CONTENT]: The 10-45s content based on the provided material.
+3. [CLOSING CTA]: A clear, conversational Call-to-Action that explicitly mentions "MommentumMindset" and encourages the viewer to subscribe, like the video, and leave a comment.
+
 For each scene:
-1. Provide the exact text to be spoken (2-3 sentences max)
+1. Provide the exact text to be spoken (2-3 sentences max, ~64-192 tokens per scene)
 2. Create a detailed image generation prompt that:
    - Captures the emotion/message of that text
    - Follows the art style provided above

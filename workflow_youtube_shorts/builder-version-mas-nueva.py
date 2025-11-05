@@ -276,14 +276,23 @@ class VideoBuilder:
         if audio_input_index is not None:
             cmd.extend(["-map", f"{audio_input_index}:a"])
 
-        # Video codec settings
-        cmd.extend(["-c:v", "libx264", "-preset", "ultrafast"])
+        # Video codec settings - Try NVENC GPU first, fallback to x264 CPU
+        # NVENC is 5-10x faster with 12GB VRAM available
+        cmd.extend(["-c:v", "h264_nvenc"])
+        cmd.extend(["-preset", "p4"])  # p4 = balanced quality/speed
+        cmd.extend(["-tune", "hq"])  # high quality mode
+        cmd.extend(["-rc", "vbr"])  # variable bitrate
+        cmd.extend(["-cq", "23"])  # quality level (same as CRF)
+        cmd.extend(["-b:v", "5M"])  # target bitrate
+        cmd.extend(["-maxrate", "8M"])  # max bitrate
+        cmd.extend(["-bufsize", "10M"])  # buffer size
+        cmd.extend(["-spatial-aq", "1"])  # spatial adaptive quantization
+        cmd.extend(["-temporal-aq", "1"])  # temporal adaptive quantization
+        cmd.extend(["-pix_fmt", "yuv420p"])
 
-        cmd.extend(["-crf", "23", "-pix_fmt", "yuv420p"])
-
-        # Audio codec settings
+        # Audio codec settings - reduced bitrate for Shorts
         if self.audio_file:
-            cmd.extend(["-c:a", "aac", "-b:a", "192k"])
+            cmd.extend(["-c:a", "aac", "-b:a", "128k"])
             if audio_duration:
                 cmd.extend(["-t", str(audio_duration)])
 

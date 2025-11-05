@@ -76,11 +76,17 @@ def update_stories(subreddit: str | None, limit: int):
     default=False,
     help="Update stories from Reddit first",
 )
-def generate(count: int, update: bool):
+@click.option(
+    "--profile",
+    "-p",
+    default=None,
+    help="Voice/music profile to use (default: from profiles.yaml)",
+)
+def generate(count: int, update: bool, profile: str | None):
     """Generate videos from stories in Google Sheets."""
 
     async def run():
-        orchestrator = WorkflowOrchestrator()
+        orchestrator = WorkflowOrchestrator(profile=profile)
         try:
             await orchestrator.run_complete_workflow(
                 update_stories=update,
@@ -94,7 +100,13 @@ def generate(count: int, update: bool):
 
 @cli.command()
 @click.argument("story_id")
-def generate_single(story_id: str):
+@click.option(
+    "--profile",
+    "-p",
+    default=None,
+    help="Voice/music profile to use (default: from profiles.yaml)",
+)
+def generate_single(story_id: str, profile: str | None):
     """
     Generate video from a single Reddit story by ID.
 
@@ -102,7 +114,7 @@ def generate_single(story_id: str):
     """
 
     async def run():
-        orchestrator = WorkflowOrchestrator()
+        orchestrator = WorkflowOrchestrator(profile=profile)
         try:
             await orchestrator.run_single_story(story_id)
         finally:

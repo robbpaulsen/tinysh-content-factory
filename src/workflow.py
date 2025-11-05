@@ -11,6 +11,7 @@ from src.config import settings
 from src.models import GeneratedVideo, StoryRecord, VideoScript
 from src.services.llm import LLMService
 from src.services.media import MediaService
+from src.services.profile_manager import ProfileManager
 from src.services.reddit import RedditService
 from src.services.sheets import GoogleSheetsService
 from src.services.youtube import YouTubeService
@@ -22,9 +23,22 @@ console = Console()
 class WorkflowOrchestrator:
     """Orchestrates the complete YouTube Shorts generation workflow."""
 
-    def __init__(self):
-        """Initialize all services."""
+    def __init__(self, profile: str | None = None):
+        """
+        Initialize all services.
+
+        Args:
+            profile: Voice/music profile ID (uses default from profiles.yaml if None)
+        """
         logger.info("Initializing workflow orchestrator")
+
+        # Initialize profile manager
+        self.profile_manager = ProfileManager(settings.profiles_path)
+        self.active_profile = profile or settings.active_profile
+
+        # Log which profile is being used
+        selected_profile = self.profile_manager.get_profile(self.active_profile)
+        logger.info(f"Using profile: {selected_profile.name}")
 
         self.reddit = RedditService()
         self.sheets = GoogleSheetsService()
@@ -83,7 +97,7 @@ class WorkflowOrchestrator:
         script = await self.llm.create_complete_workflow(story.title, story.content)
         console.print(f"[green]  ✓ Script created with {len(script.scenes)} scenes[/green]")
 
-        # Step 2: Process each scene
+        # Step 2: Process each scene sequentially
         scene_videos: list[GeneratedVideo] = []
 
         with Progress(
@@ -102,9 +116,10 @@ class WorkflowOrchestrator:
                 logger.info(f"Scene {idx}: Generating image")
                 image = await self.media.generate_and_upload_image(scene.image_prompt)
 
-                # Generate TTS
+                # Generate TTS with profile-specific voice config
                 logger.info(f"Scene {idx}: Generating TTS")
-                tts = await self.media.generate_tts(scene.text)
+                voice_config = self.profile_manager.get_voice_config(self.active_profile)
+                tts = await self.media.generate_tts(scene.text, voice_config=voice_config)
 
                 # Generate video with captions
                 logger.info(f"Scene {idx}: Generating captioned video")
@@ -117,15 +132,19 @@ class WorkflowOrchestrator:
 
         console.print(f"[green]  ✓ Generated {len(scene_videos)} scene videos[/green]")
 
-        # Step 3: Merge all videos
+        # Step 3: Merge all videos with profile-specific music
         console.print("[cyan]  → Merging videos...[/cyan]")
         video_ids = [v.file_id for v in scene_videos]
+        music_config = self.profile_manager.get_music_config(self.active_profile)
         final_video_id = await self.media.merge_videos(
-            video_ids, background_music_id=settings.background_music_id
+            video_ids,
+            background_music_path=music_config["path"],
+            music_volume=music_config["volume"]
         )
-        console.print(f"[green]  ✓ Videos merged: {final_video_id}[/green]")
+        console.print(f"[green]  ✓ Videos merged with music: {music_config['name']}[/green]")
 
         return final_video_id, script
+
 
     async def upload_to_youtube(
         self, video_id: str, script: VideoScript, output_dir: Path | None = None
@@ -146,7 +165,8 @@ class WorkflowOrchestrator:
 
         # Download video
         console.print("[cyan]  → Downloading video...[/cyan]")
-        video_path = output_dir / f"{video_id}.mp4"
+        # video_id already includes extension
+        video_path = output_dir / video_id
         await self.media.download_file(video_id, video_path)
         console.print(f"[green]  ✓ Downloaded to {video_path}[/green]")
 
@@ -230,7 +250,8 @@ class WorkflowOrchestrator:
                 # Download video locally (YouTube upload disabled)
                 output_dir = Path("./output")
                 output_dir.mkdir(parents=True, exist_ok=True)
-                video_path = output_dir / f"{final_video_id}.mp4"
+                # file_id already includes .mp4 extension
+                video_path = output_dir / final_video_id
 
                 console.print("[cyan]  → Downloading video...[/cyan]")
                 await self.media.download_file(final_video_id, video_path)
@@ -288,7 +309,8 @@ class WorkflowOrchestrator:
             # Download video locally (YouTube upload disabled)
             output_dir = Path("./output")
             output_dir.mkdir(parents=True, exist_ok=True)
-            video_path = output_dir / f"{final_video_id}.mp4"
+            # file_id already includes .mp4 extension
+            video_path = output_dir / final_video_id
 
             console.print("[cyan]  → Downloading video...[/cyan]")
             await self.media.download_file(final_video_id, video_path)

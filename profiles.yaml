@@ -1,0 +1,159 @@
+# YouTube Shorts Voice & Music Profiles
+# ==================================================
+# Each profile defines voice settings and music playlist for video generation
+#
+# Usage:
+#   - Set default_profile below or use CLI flag: --profile <profile_name>
+#   - Music rotation modes: random (default), sequential
+#   - Paths must be absolute or relative to project root
+
+# Profile definitions
+profiles:
+  # Brody - Calm & Reflective
+  atlas_theone:
+    name: "Atlas - First Born"
+    description: "Deep, interesting voice, he wears zen and gives aways knowledge"
+
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/brody/brody-loneliness.mp3"
+      exaggeration: 0.55
+      cfg_weight: 0.65
+      temperature: 0.7
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
+        - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
+          name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
+          name: "Down the Rabbit Hole"
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
+          name: "Motivational - Background"
+      volume: 0.12
+      rotation: random
+
+  # Frank - Motivational Energy
+  frank_motivational:
+    name: "Frank - Motivational"
+    description: "Energetic, inspiring tone for motivational content"
+
+    voice:
+      engine: chatterbox # Options: chatterbox, kokoro
+      sample_path: "D:/Music/voces/frank/Frank-Louis_pvc_sp105_s30_sb85_se50_b_m2.mp3"
+      # Chatterbox-specific settings
+      exageration: 0.55 # 0.0-1.0, lower = more consistent
+      cfg_weight: 0.65 # 0.0-1.0, classifier-free guidance
+      temperature: 0.7 # 0.0-1.0, expressiveness level
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
+          name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
+          name: "Down the Rabbit Hole"
+      volume: 0.1 # 0.0-1.0, background music volume
+      rotation: random # Options: random, sequential
+
+  # Brody - Calm & Reflective
+  brody_calm:
+    name: "Brody - Calm"
+    description: "Calm, reflective tone for contemplative content"
+
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/brody/brody-loneliness.mp3"
+      exaggeration: 0.6
+      cfg_weight: 0.65
+      temperature: 0.7
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
+        - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
+          name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
+          name: "Down the Rabbit Hole"
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
+          name: "Motivational - Background"
+      volume: 0.12
+      rotation: random
+
+  # Denzel - Powerful Authority
+  denzel_powerful:
+    name: "Denzel - Powerful"
+    description: "Strong, authoritative tone for impactful messages"
+
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/denzel/denzelwashntn.mp3"
+      exaggeration: 0.6
+      cfg_weight: 0.65
+      temperature: 0.7
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
+          name: "Motivational - Background"
+      volume: 0.12
+      rotation: random
+
+  # Real - David
+  real_david:
+    name: "Real - David"
+    description: "Strongly opinionated, he'll hit you with the TRUTH but at what cost ?"
+
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/david/david-voice.mp3"
+      exaggeration: 0.6
+      cfg_weight: 0.6
+      temperature: 0.7
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
+          name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
+        - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
+          name: "Down the Rabbit Hole"
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+      volume: 0.12
+      rotation: random
+
+  # Kokoro Example - Fast & Simple
+  kokoro_bella:
+    name: "Kokoro Bella"
+    description: "Fast TTS with consistent quality (no voice cloning)"
+
+    voice:
+      engine: kokoro
+      voice: af_bella # Kokoro voice name (af_bella, af_heart, etc)
+      speed: 1.0 # 0.5-2.0, speech speed
+
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+      volume: 0.1
+      rotation: random
+
+# Default profile to use when --profile flag is not specified
+default_profile: frank_motivational
+
+# Music rotation state (auto-managed, do not edit manually)
+rotation_state:
+  frank_motivational: 0
+  brody_calm: 0
+  denzel_powerful: 0
+  kokoro_bella: 0

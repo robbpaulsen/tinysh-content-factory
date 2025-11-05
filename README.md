@@ -153,18 +153,66 @@ CONTENT_TYPE="motivational speech"
 ART_STYLE="Create a cinematic image..."  # Full prompt in .env.example
 ```
 
-### TTS Configuration
+### Voice & Music Profiles
+
+The system uses **profiles** to manage voice and music configurations, defined in `profiles.yaml`:
 
 ```bash
-# Kokoro (fast, good quality)
-TTS_ENGINE=kokoro
-KOKORO_VOICE=af_bella
-KOKORO_SPEED=1.0
+# Optional: Override default profile from profiles.yaml
+ACTIVE_PROFILE=frank_motivational
 
-# OR Chatterbox (voice cloning, slower)
-TTS_ENGINE=chatterbox
-CHATTERBOX_VOICE_SAMPLE_ID=your-file-id  # Optional for voice cloning
+# Optional: Path to profiles configuration
+PROFILES_PATH=profiles.yaml
 ```
+
+**Profile Configuration (`profiles.yaml`):**
+
+Each profile includes:
+- **Voice settings**: TTS engine (Kokoro/Chatterbox), voice samples, parameters
+- **Music playlist**: Multiple tracks with rotation (random/sequential)
+- **Volume settings**: Per-profile music volume
+
+Example profile structure:
+
+```yaml
+profiles:
+  frank_motivational:
+    name: "Frank - Motivational"
+    description: "Energetic, inspiring tone"
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/frank/sample.mp3"
+      temperature: 0.7
+      cfg_weight: 0.65
+      exaggeration: 0.55
+    music:
+      playlist:
+        - path: "D:/Music/tracks/track1.mp3"
+          name: "Track Name"
+      volume: 0.1
+      rotation: random  # or sequential
+
+default_profile: frank_motivational
+```
+
+**Using Profiles via CLI:**
+
+```bash
+# Use default profile
+python -m src.main generate --count 1
+
+# Use specific profile
+python -m src.main generate --count 1 --profile brody_calm
+
+# Generate single story with profile
+python -m src.main generate-single abc123 --profile denzel_powerful
+```
+
+**Benefits:**
+- ✅ Easy switching between voice styles
+- ✅ Music rotation (avoid repetition)
+- ✅ Multiple profiles for different content types
+- ✅ Path validation for voice samples and music files
 
 ### Image Generation
 
@@ -174,12 +222,23 @@ IMAGE_WIDTH=768
 IMAGE_HEIGHT=1344
 ```
 
-### Background Music (Optional)
+
+### Performance Optimization
 
 ```bash
-BACKGROUND_MUSIC_ID=your-file-id
-BACKGROUND_MUSIC_VOLUME=0.2
+# FFmpeg encoder settings (configured on media server)
+FFMPEG_ENCODER=auto     # Options: auto, nvenc (GPU), x264 (CPU)
+FFMPEG_PRESET=p4        # NVENC: p1-p7, x264: ultrafast/fast/medium
+FFMPEG_CQ=23            # Quality: 18=best, 28=worst
+FFMPEG_BITRATE=5M       # Target bitrate for videos
+FFMPEG_AUDIO_BITRATE=128k
 ```
+
+**Performance Results:**
+- ⚡ **GPU Encoding (NVENC)**: 5-10x faster than CPU encoding with NVIDIA GPU
+- ⚡ **Sequential Mode**: ~3 minutes per video (model stays loaded)
+- ⚡ **Individual Mode**: 5-7 minutes (model loads/unloads each time)
+- ⚡ **Token-Optimized Prompts**: 15-45 second videos (480-1440 tokens)
 
 ## Project Structure
 
@@ -195,9 +254,11 @@ youtube-shorts-factory/
 │       ├── sheets.py        # Google Sheets
 │       ├── llm.py          # Gemini LLM
 │       ├── media.py        # Media server client
-│       └── youtube.py      # YouTube upload
+│       ├── youtube.py      # YouTube upload
+│       └── profile_manager.py  # Voice/music profiles
 ├── workflow_youtube_shorts/
 │   └── workflow_motivational_shorts.json  # Original n8n workflow (reference)
+├── profiles.yaml           # Voice & music profiles
 ├── pyproject.toml          # Dependencies
 ├── .env.example            # Environment template
 └── README.md
@@ -218,11 +279,13 @@ youtube-shorts-factory/
 - Splits into 5-8 scenes
 - Generates image prompts for each scene
 
-### 3. Media Generation (Per Scene)
+### 3. Media Generation
 
-- **Image**: FLUX generates cinematic image
-- **TTS**: Local server creates voiceover
-- **Video**: Combines image + TTS + captions
+**Sequential Processing:**
+- **Images**: Generated one at a time (Together.ai FLUX-Free requirement)
+- **TTS**: Profile-based voice configuration from `profiles.yaml`
+- **Videos**: Generated with captions as each TTS completes
+- **Music**: Selected from profile playlist (random or sequential rotation)
 
 ### 4. Video Assembly
 
@@ -250,6 +313,8 @@ youtube-shorts-factory/
 ✅ **Versioning**: Git-friendly Python code
 ✅ **Debugging**: Better logging and error messages
 ✅ **IDE Support**: Autocomplete and refactoring
+✅ **Performance**: GPU encoding support, optimized prompts
+✅ **Profile System**: Easy voice/music management with YAML configuration
 
 ## Troubleshooting
 

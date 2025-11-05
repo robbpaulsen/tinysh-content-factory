@@ -187,10 +187,10 @@ token.json
 pickle.json
 
 # Output files
-output/
-#*.mp4
-#*.mp3
-#*.wav
+!output/.gitkeep
+*.mp4
+*.mp3
+*.wav
 *.png
 *.jpg
 *.jpeg
@@ -209,3 +209,5 @@ temp/
 *.tmp
 
 workflow_youtube_shorts/*.json
+!workflow_youtube_shorts/.gitkeep
+!tools/.gitkeep

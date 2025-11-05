@@ -187,46 +187,72 @@ class MediaService:
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True,
     )
-    async def generate_tts_direct(self, text: str) -> str:
+    async def generate_tts_direct(self, text: str, voice_config: dict | None = None) -> str:
         """
         Generate TTS on media server (Kokoro or Chatterbox).
         Returns file_id directly (synchronous response).
 
         Args:
             text: Text to convert to speech
+            voice_config: Optional voice configuration from ProfileManager
+                         (if None, uses settings for backward compatibility)
 
         Returns:
             File ID of generated audio
         """
         logger.info(f"Generating TTS: {text[:100]}...")
 
-        if settings.tts_engine == "kokoro":
+        # Use voice_config if provided, otherwise fall back to settings
+        if voice_config:
+            engine = voice_config.get("engine", "kokoro")
+        else:
+            engine = getattr(settings, "tts_engine", "kokoro")
+
+        if engine == "kokoro":
             endpoint = f"{self.base_url}/api/v1/media/audio-tools/tts/kokoro"
             # Use files= parameter to send multipart/form-data (like curl -F)
+            if voice_config:
+                voice = voice_config.get("voice", "af_bella")
+                speed = voice_config.get("speed", 1.0)
+            else:
+                voice = getattr(settings, "kokoro_voice", "af_bella")
+                speed = getattr(settings, "kokoro_speed", 1.0)
+
             files = {
                 "text": (None, text),
-                "voice": (None, settings.kokoro_voice),
-                "speed": (None, str(settings.kokoro_speed)),
+                "voice": (None, voice),
+                "speed": (None, str(speed)),
             }
         else:  # chatterbox
             endpoint = f"{self.base_url}/api/v1/media/audio-tools/tts/chatterbox"
             # Use files= parameter to send multipart/form-data (like curl -F)
+            if voice_config:
+                exaggeration = voice_config.get("exaggeration", 0.5)
+                cfg_weight = voice_config.get("cfg_weight", 0.5)
+                temperature = voice_config.get("temperature", 0.7)
+                sample_path = voice_config.get("sample_path")
+            else:
+                exaggeration = getattr(settings, "chatterbox_exaggeration", 0.5)
+                cfg_weight = getattr(settings, "chatterbox_cfg_weight", 0.5)
+                temperature = getattr(settings, "chatterbox_temperature", 0.7)
+                sample_path = getattr(settings, "chatterbox_voice_sample_id", None)
+
             files = {
                 "text": (None, text),
-                "exaggeration": (None, str(settings.chatterbox_exaggeration)),
-                "cfg_weight": (None, str(settings.chatterbox_cfg_weight)),
-                "temperature": (None, str(settings.chatterbox_temperature)),
+                "exaggeration": (None, str(exaggeration)),
+                "cfg_weight": (None, str(cfg_weight)),
+                "temperature": (None, str(temperature)),
             }
             # Handle voice sample - check if it's a local path or file_id
-            if settings.chatterbox_voice_sample_id:
-                voice_sample = settings.chatterbox_voice_sample_id
+            if sample_path:
+                voice_sample = sample_path
                 # If it's a local file path, upload it first
                 if voice_sample.startswith(("D:", "C:", "/", ".", "\\")):
-                    logger.warning(
-                        f"CHATTERBOX_VOICE_SAMPLE_ID appears to be a local path: {voice_sample}. "
-                        "Upload this file to the media server first and use the file_id instead."
-                    )
-                    # For now, skip it to avoid 404 error
+                    logger.info(f"Uploading local voice sample to media server: {voice_sample}")
+                    # Upload the file and get file_id
+                    voice_sample_file_id = await self.upload_local_file_if_needed(voice_sample, "audio")
+                    files["sample_audio_id"] = (None, voice_sample_file_id)
+                    logger.info(f"Voice sample uploaded with file_id: {voice_sample_file_id}")
                 else:
                     files["sample_audio_id"] = (None, voice_sample)
 
@@ -314,17 +340,18 @@ class MediaService:
             # Still processing, wait and retry
             await asyncio.sleep(poll_interval)
 
-    async def generate_tts(self, text: str) -> GeneratedTTS:
+    async def generate_tts(self, text: str, voice_config: dict | None = None) -> GeneratedTTS:
         """
         Generate TTS audio (returns immediately with file_id).
 
         Args:
             text: Text to convert to speech
+            voice_config: Optional voice configuration from ProfileManager
 
         Returns:
             GeneratedTTS with file_id
         """
-        file_id = await self.generate_tts_direct(text)
+        file_id = await self.generate_tts_direct(text, voice_config)
         return GeneratedTTS(file_id=file_id, duration=None)
 
     @retry(
@@ -401,7 +428,10 @@ class MediaService:
         reraise=True,
     )
     async def start_video_merge(
-        self, video_ids: list[str], background_music_id: str | None = None
+        self,
+        video_ids: list[str],
+        background_music_id: str | None = None,
+        music_volume: float | None = None
     ) -> str:
         """
         Start merging multiple videos with optional background music.
@@ -409,6 +439,7 @@ class MediaService:
         Args:
             video_ids: List of video file_ids to merge
             background_music_id: Optional background music file_id
+            music_volume: Optional music volume (0.0-1.0)
 
         Returns:
             file_id (synchronous response)
@@ -420,7 +451,8 @@ class MediaService:
 
         if background_music_id:
             files["background_music_id"] = (None, background_music_id)
-            files["background_music_volume"] = (None, str(settings.background_music_volume))
+            volume = music_volume if music_volume is not None else 0.1
+            files["background_music_volume"] = (None, str(volume))
 
         # Use files= for multipart/form-data (like curl -F)
         response = await self.client.post(
@@ -488,25 +520,32 @@ class MediaService:
             return file_path_or_id
 
     async def merge_videos(
-        self, video_ids: list[str], background_music_id: str | None = None
+        self,
+        video_ids: list[str],
+        background_music_id: str | None = None,
+        background_music_path: str | None = None,
+        music_volume: float | None = None
     ) -> str:
         """
         Merge videos (synchronous operation).
 
         Args:
             video_ids: List of video file_ids to merge
-            background_music_id: Optional background music file_id or local path
+            background_music_id: Optional background music file_id (deprecated, use background_music_path)
+            background_music_path: Optional background music file_id or local path
+            music_volume: Optional music volume (0.0-1.0)
 
         Returns:
             Final merged video file_id
         """
-        # Upload background music if it's a local path
-        if background_music_id:
-            background_music_id = await self.upload_local_file_if_needed(
-                background_music_id, "audio"
-            )
+        # Use background_music_path if provided, otherwise fall back to background_music_id
+        music_id = background_music_path or background_music_id
 
-        file_id = await self.start_video_merge(video_ids, background_music_id)
+        # Upload background music if it's a local path
+        if music_id:
+            music_id = await self.upload_local_file_if_needed(music_id, "audio")
+
+        file_id = await self.start_video_merge(video_ids, music_id, music_volume)
         return file_id
 
     @retry(
@@ -524,7 +563,7 @@ class MediaService:
         Returns:
             Download URL
         """
-        return f"{self.base_url}/api/v1/media/storage/{file_id}/download"
+        return f"{self.base_url}/api/v1/media/storage/{file_id}"
 
     @retry(
         stop=stop_after_attempt(3),

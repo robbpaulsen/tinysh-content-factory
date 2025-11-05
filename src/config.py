@@ -48,33 +48,14 @@ class Settings(BaseSettings):
     google_sheet_id: str = Field(..., description="Google Sheets document ID")
     sheet_name: str = Field(default="Sheet1", description="Sheet name within the document")
 
-    # TTS Configuration
-    tts_engine: Literal["kokoro", "chatterbox"] = Field(
-        default="kokoro",
-        description="TTS engine to use"
-    )
-    kokoro_voice: str = Field(default="af_bella", description="Kokoro voice name")
-    kokoro_speed: float = Field(default=1.0, ge=0.5, le=2.0, description="Kokoro speech speed")
-
-    # Chatterbox TTS
-    chatterbox_exaggeration: float = Field(default=0.5, description="Chatterbox exaggeration")
-    chatterbox_cfg_weight: float = Field(default=0.5, description="Chatterbox CFG weight")
-    chatterbox_temperature: float = Field(default=0.8, description="Chatterbox temperature")
-    chatterbox_voice_sample_id: str | None = Field(
+    # Profile System (replaces individual voice/music settings)
+    active_profile: str | None = Field(
         default=None,
-        description="File ID for voice cloning"
+        description="Active profile name (uses default from profiles.yaml if None)"
     )
-
-    # Background Music
-    background_music_id: str | None = Field(
-        default=None,
-        description="File ID of background music"
-    )
-    background_music_volume: float = Field(
-        default=0.2,
-        ge=0.1,
-        le=1.0,
-        description="Background music volume"
+    profiles_path: Path = Field(
+        default=Path("profiles.yaml"),
+        description="Path to profiles configuration file"
     )
 
     # Image Generation
@@ -130,17 +111,6 @@ class Settings(BaseSettings):
         description="Audio bitrate (e.g., 128k, 192k)"
     )
 
-    # Parallelization
-    parallel_image_generation: bool = Field(
-        default=False,
-        description="Generate all images in parallel (recommended)"
-    )
-    max_parallel_images: int = Field(
-        default=8,
-        ge=1,
-        le=20,
-        description="Maximum simultaneous image generations"
-    )
 
 
 # Global settings instance

@@ -7,33 +7,40 @@ from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.logging import RichHandler
 
+from src.services.logger_service import cleanup_old_logs, setup_logging
 from src.workflow import WorkflowOrchestrator
 
 console = Console()
-
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=True, console=console)],
-)
-
 logger = logging.getLogger(__name__)
 
 
 @click.group()
 @click.version_option(version="0.1.0")
-def cli():
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Enable verbose (DEBUG) logging",
+)
+@click.pass_context
+def cli(ctx, verbose: bool):
     """
     YouTube Shorts Factory - Automated video generation from Reddit stories.
 
     Transform Reddit stories into engaging YouTube Shorts with AI-generated
     content, images, voiceovers, and captions.
     """
-    pass
+    # Ensure context object exists
+    ctx.ensure_object(dict)
+    ctx.obj["verbose"] = verbose
+
+    # Setup logging based on verbose flag
+    setup_logging(verbose=verbose)
+
+    # Cleanup old logs on startup
+    from src.config import settings
+    cleanup_old_logs(max_age_days=settings.log_max_age_days)
 
 
 @cli.command()

@@ -117,6 +117,21 @@ class Settings(BaseSettings):
         description="Enable SEO metadata generation with Gemini"
     )
 
+    # Logging
+    log_to_file: bool = Field(
+        default=True,
+        description="Enable logging to file with rotation"
+    )
+    log_dir: Path = Field(
+        default=Path("output/logs"),
+        description="Directory for log files"
+    )
+    log_max_age_days: int = Field(
+        default=7,
+        ge=1,
+        le=30,
+        description="Maximum age of log files to keep (days)"
+    )
 
 
 # Global settings instance

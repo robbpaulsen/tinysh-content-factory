@@ -11,6 +11,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from src.config import settings
 from src.models import GeneratedVideo, SEOMetadata, StoryRecord, VideoScript
 from src.services.llm import LLMService
+from src.services.logger_service import log_performance
 from src.services.media import MediaService
 from src.services.profile_manager import ProfileManager
 from src.services.reddit import RedditService
@@ -95,58 +96,64 @@ class WorkflowOrchestrator:
         """
         console.print(f"\n[bold cyan]🎬 Processing story: {story.title[:60]}...[/bold cyan]")
 
-        # Step 1: Generate script with LLM
-        console.print("[cyan]  → Creating script with Gemini...[/cyan]")
-        script = await self.llm.create_complete_workflow(story.title, story.content)
-        console.print(f"[green]  ✓ Script created with {len(script.scenes)} scenes[/green]")
+        with log_performance(f"Generate video: {story.title[:40]}", logger):
+            # Step 1: Generate script with LLM
+            console.print("[cyan]  → Creating script with Gemini...[/cyan]")
+            with log_performance("LLM script generation", logger):
+                script = await self.llm.create_complete_workflow(story.title, story.content)
+            console.print(f"[green]  ✓ Script created with {len(script.scenes)} scenes[/green]")
 
-        # Step 2: Process each scene sequentially
-        scene_videos: list[GeneratedVideo] = []
+            # Step 2: Process each scene sequentially
+            scene_videos: list[GeneratedVideo] = []
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task(
-                f"[cyan]Processing {len(script.scenes)} scenes...", total=len(script.scenes)
-            )
-
-            for idx, scene in enumerate(script.scenes, 1):
-                progress.update(task, description=f"[cyan]Scene {idx}/{len(script.scenes)}...")
-
-                # Generate image
-                logger.info(f"Scene {idx}: Generating image")
-                image = await self.media.generate_and_upload_image(scene.image_prompt)
-
-                # Generate TTS with profile-specific voice config
-                logger.info(f"Scene {idx}: Generating TTS")
-                voice_config = self.profile_manager.get_voice_config(self.active_profile)
-                tts = await self.media.generate_tts(scene.text, voice_config=voice_config)
-
-                # Generate video with captions
-                logger.info(f"Scene {idx}: Generating captioned video")
-                video = await self.media.generate_captioned_video(
-                    image.file_id, tts.file_id, scene.text
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task(
+                    f"[cyan]Processing {len(script.scenes)} scenes...", total=len(script.scenes)
                 )
 
-                scene_videos.append(video)
-                progress.advance(task)
+                for idx, scene in enumerate(script.scenes, 1):
+                    progress.update(task, description=f"[cyan]Scene {idx}/{len(script.scenes)}...")
 
-        console.print(f"[green]  ✓ Generated {len(scene_videos)} scene videos[/green]")
+                    # Generate image
+                    logger.debug(f"Scene {idx}: Generating image")
+                    with log_performance(f"Scene {idx} - Image generation", logger):
+                        image = await self.media.generate_and_upload_image(scene.image_prompt)
 
-        # Step 3: Merge all videos with profile-specific music
-        console.print("[cyan]  → Merging videos...[/cyan]")
-        video_ids = [v.file_id for v in scene_videos]
-        music_config = self.profile_manager.get_music_config(self.active_profile)
-        final_video_id = await self.media.merge_videos(
-            video_ids,
-            background_music_path=music_config["path"],
-            music_volume=music_config["volume"]
-        )
-        console.print(f"[green]  ✓ Videos merged with music: {music_config['name']}[/green]")
+                    # Generate TTS with profile-specific voice config
+                    logger.debug(f"Scene {idx}: Generating TTS")
+                    voice_config = self.profile_manager.get_voice_config(self.active_profile)
+                    with log_performance(f"Scene {idx} - TTS generation", logger):
+                        tts = await self.media.generate_tts(scene.text, voice_config=voice_config)
 
-        return final_video_id, script
+                    # Generate video with captions
+                    logger.debug(f"Scene {idx}: Generating captioned video")
+                    with log_performance(f"Scene {idx} - Video generation", logger):
+                        video = await self.media.generate_captioned_video(
+                            image.file_id, tts.file_id, scene.text
+                        )
+
+                    scene_videos.append(video)
+                    progress.advance(task)
+
+            console.print(f"[green]  ✓ Generated {len(scene_videos)} scene videos[/green]")
+
+            # Step 3: Merge all videos with profile-specific music
+            console.print("[cyan]  → Merging videos...[/cyan]")
+            video_ids = [v.file_id for v in scene_videos]
+            music_config = self.profile_manager.get_music_config(self.active_profile)
+            with log_performance("Video merge with music", logger):
+                final_video_id = await self.media.merge_videos(
+                    video_ids,
+                    background_music_path=music_config["path"],
+                    music_volume=music_config["volume"]
+                )
+            console.print(f"[green]  ✓ Videos merged with music: {music_config['name']}[/green]")
+
+            return final_video_id, script
 
     async def generate_and_save_seo_metadata(
         self, script: VideoScript, video_id: str, output_dir: Path
@@ -168,19 +175,20 @@ class WorkflowOrchestrator:
 
         console.print("[cyan]  → Generating SEO metadata...[/cyan]")
 
-        # Combine all scene texts for context
-        script_text = " ".join([scene.text for scene in script.scenes])
+        with log_performance("SEO metadata generation", logger):
+            # Combine all scene texts for context
+            script_text = " ".join([scene.text for scene in script.scenes])
 
-        # Get profile name for context
-        profile = self.profile_manager.get_profile(self.active_profile)
+            # Get profile name for context
+            profile = self.profile_manager.get_profile(self.active_profile)
 
-        # Generate SEO metadata
-        metadata = await self.seo_optimizer.generate_seo_metadata(
-            video_title=script.title,
-            video_description=script.description,
-            script_text=script_text,
-            profile_name=profile.name,
-        )
+            # Generate SEO metadata
+            metadata = await self.seo_optimizer.generate_seo_metadata(
+                video_title=script.title,
+                video_description=script.description,
+                script_text=script_text,
+                profile_name=profile.name,
+            )
 
         # Save to JSON file
         # video_id is like "video_001.mp4", we want "video_001_metadata.json"

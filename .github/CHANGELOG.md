@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-01-07
+
+### Added
+- **Logging System** - Comprehensive logging infrastructure with two modes
+  - **Simple Mode** (default): INFO level, console only with progress bars
+  - **Verbose Mode** (`--verbose` flag): DEBUG level, console + file with detailed traces
+  - File logging with automatic rotation (10MB per file, 5 backups)
+  - Timestamped log files in `output/logs/`
+  - Automatic cleanup of old log files (configurable retention period)
+- **Performance Metrics** - Detailed operation timing
+  - `log_performance` context manager for measuring operation duration
+  - Tracks: video generation, LLM calls, image/TTS/video generation, merging
+  - Per-scene timing breakdown in verbose mode
+  - Total workflow duration measurement
+- **API Call Logging** - Track external API interactions
+  - Logs all Gemini API calls (speech generation, script creation)
+  - Success/error/retry status tracking
+  - Response metadata (characters generated, scenes created, etc.)
+  - Helps debug API rate limits and failures
+- **CLI Enhancements**
+  - `--verbose` / `-v` global flag for all commands
+  - Automatic log cleanup on startup
+  - Reduced noise from third-party libraries (httpx, google, urllib3)
+- **Configuration** - New logging settings in `.env`
+  - `LOG_TO_FILE` - Enable/disable file logging (default: true)
+  - `LOG_DIR` - Log directory path (default: output/logs)
+  - `LOG_MAX_AGE_DAYS` - Log retention in days (default: 7, range: 1-30)
+
+### Changed
+- **Main CLI** - Replaced basic logging with structured logging service
+- **Workflow** - Integrated performance timing for all major operations
+- **LLM Service** - Added API call logging for Gemini interactions
+
+### Benefits
+- **Debugging**: Detailed logs help troubleshoot failures quickly
+- **Performance Analysis**: Track where time is spent in the workflow
+- **Production Ready**: File logs with rotation prevent disk fill-up
+- **Flexibility**: Toggle between simple and verbose modes as needed
+
 ## [0.2.1] - 2025-01-07
 
 ### Added

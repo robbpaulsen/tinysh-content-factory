@@ -77,17 +77,43 @@ Project task tracker for YouTube Shorts Factory.
   - Defaults to enabled
   - Can be disabled without breaking workflow
 
+## ✅ Completed (Phase 4 - Logging System)
+
+### Logging Service
+- [x] **LoggerService** - Comprehensive logging infrastructure
+  - Simple mode (INFO level, console only with progress bars)
+  - Verbose mode (DEBUG level, console + file with detailed traces)
+  - File logging with rotation (10MB max, 5 backups)
+  - Timestamped log files in `output/logs/`
+  - Automatic cleanup of old logs (configurable retention)
+
+- [x] **Performance Metrics**
+  - `log_performance` context manager for timing operations
+  - Tracks video generation, LLM calls, image/TTS/video generation, merging
+  - Detailed per-scene timing in verbose mode
+  - Total workflow duration tracking
+
+- [x] **API Call Logging**
+  - `log_api_call` function for tracking external API interactions
+  - Logs Gemini API calls (speech generation, script creation)
+  - Success/error/retry status tracking
+  - Response details (chars generated, scenes created, etc.)
+
+- [x] **CLI Integration**
+  - `--verbose` global flag for all commands
+  - Automatic log cleanup on startup
+  - Configurable via environment variables
+
+- [x] **Configuration**
+  - `LOG_TO_FILE` - Enable/disable file logging
+  - `LOG_DIR` - Log directory path
+  - `LOG_MAX_AGE_DAYS` - Log retention period (1-30 days)
+
 ## 🔄 In Progress
 
 None
 
 ## 📋 Planned Features
-
-### Feature 1: Logging System (Priority: Medium)
-- [ ] Simple mode (progress bar only)
-- [ ] Verbose mode (full debugging)
-- [ ] Configurable log levels
-- [ ] Log file output option
 
 ### General Improvements
 - [ ] Unit tests for services

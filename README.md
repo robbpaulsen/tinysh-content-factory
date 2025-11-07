@@ -240,6 +240,56 @@ FFMPEG_AUDIO_BITRATE=128k
 - ⚡ **Individual Mode**: 5-7 minutes (model loads/unloads each time)
 - ⚡ **Token-Optimized Prompts**: 15-45 second videos (480-1440 tokens)
 
+### SEO Optimization
+
+The system automatically generates SEO-optimized YouTube metadata using Google Gemini:
+
+```bash
+# Enable/disable SEO metadata generation (default: enabled)
+SEO_ENABLED=true
+```
+
+**What it generates:**
+- 📝 **Optimized Titles**: 50-60 characters, clickable, keyword-rich
+- 📋 **Smart Descriptions**: Strategic keywords, hashtags, CTAs
+- 🏷️ **Relevant Tags**: 10-15 tags per video for discoverability
+- 🎯 **Category Selection**: Automatic YouTube category assignment
+- 🎨 **Profile-Aware**: Adapts to your active voice/music profile
+
+**Output:**
+
+Each video generates two files:
+```
+output/
+├── video_001.mp4              # Generated video
+└── video_001_metadata.json    # SEO metadata
+```
+
+**Metadata JSON format:**
+```json
+{
+  "title": "5 Habits That Changed My Life Forever",
+  "description": "Discover powerful habits...\n\n#motivation #shorts #selfimprovement",
+  "tags": ["motivation", "self improvement", "productivity", ...],
+  "category_id": "22",
+  "original_title": "Transform Your Life",
+  "original_description": "A story about...",
+  "profile": "frank_motivational"
+}
+```
+
+**Benefits:**
+- ✅ Saves time: No manual title/description writing
+- ✅ Consistency: Professional metadata for every video
+- ✅ Discoverability: Optimized for YouTube search and recommendations
+- ✅ Scalable: Ready for multi-channel workflows
+
+**To disable SEO optimization:**
+```bash
+# In .env
+SEO_ENABLED=false
+```
+
 ## Project Structure
 
 ```

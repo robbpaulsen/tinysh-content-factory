@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-01-07
+
+### Added
+- **SEO Optimizer Service** - Automatic YouTube metadata generation with Google Gemini
+  - SEO-optimized titles (50-60 characters for max visibility)
+  - Keyword-rich descriptions with strategic hashtags
+  - 10-15 relevant tags per video
+  - Automatic YouTube category selection
+  - Profile-aware content optimization
+  - Configurable via `SEO_ENABLED` environment variable (default: true)
+- **SEO Metadata Model** - Type-safe Pydantic model for metadata validation
+- **Metadata JSON Export** - Each video now generates `video_XXX_metadata.json` with:
+  - SEO-optimized metadata ready for YouTube upload
+  - Original title/description preserved for reference
+  - Profile context for tracking
+- **Configuration** - New `SEO_ENABLED` setting in `.env.example`
+
+### Changed
+- **WorkflowOrchestrator** - Integrated SEO metadata generation after video creation
+- **Video Output** - Now produces both video file and metadata JSON
+- **README** - Updated with SEO optimizer documentation
+
+### Benefits
+- Saves manual time writing YouTube titles and descriptions
+- Improves video discoverability with optimized tags
+- Consistent metadata quality across all videos
+- Ready for multi-channel scaling with different SEO strategies
+
+## [0.2.0] - 2025-01-XX
+
 ### Added
 - **Voice & Music Profile System** - Manage multiple voice and music configurations via `profiles.yaml`
   - Define profiles with voice settings (Chatterbox/Kokoro) and music playlists
@@ -28,9 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-uploads local voice sample files to media server (fixes repeated warnings)
 - Music volume now configurable per profile instead of global setting
 
-## [0.2.0] - 2025-01-XX
-
-### Added
+### Added (v0.2.0 features)
 - **FFmpeg GPU Optimization** - NVENC hardware encoding support for 5-10x faster video processing
   - Configurable encoder: auto-detect, NVENC (GPU), or x264 (CPU)
   - Advanced NVENC settings: preset, CQ, bitrate, spatial/temporal AQ

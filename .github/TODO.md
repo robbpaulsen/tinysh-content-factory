@@ -52,6 +52,31 @@ Project task tracker for YouTube Shorts Factory.
   - CHANGELOG.md created with version history
   - .env.example updated to point to profiles.yaml
 
+## ✅ Completed (Phase 3 - SEO Optimization)
+
+### SEO Optimizer
+- [x] **SEOOptimizerService** - Gemini-based metadata generation
+  - SEO-optimized titles (50-60 chars)
+  - Descriptions with keywords and hashtags
+  - Tag suggestions (10-15 tags)
+  - YouTube category selection
+  - Profile-aware context
+
+- [x] **SEOMetadata Model** - Pydantic model for metadata
+  - Title, description, tags, category_id fields
+  - Validation and type safety
+
+- [x] **Workflow Integration**
+  - Automatic metadata generation after video creation
+  - JSON file output (video_XXX_metadata.json)
+  - Configurable via SEO_ENABLED flag
+  - Preserves original title/description for reference
+
+- [x] **Configuration**
+  - SEO_ENABLED environment variable
+  - Defaults to enabled
+  - Can be disabled without breaking workflow
+
 ## 🔄 In Progress
 
 None
@@ -63,13 +88,6 @@ None
 - [ ] Verbose mode (full debugging)
 - [ ] Configurable log levels
 - [ ] Log file output option
-
-### Feature 3: SEO Optimizer (Priority: Low)
-- [ ] Gemini-based metadata generation
-- [ ] YouTube title optimization
-- [ ] Description generation with keywords
-- [ ] Tag suggestions
-- [ ] Thumbnail text recommendations
 
 ### General Improvements
 - [ ] Unit tests for services

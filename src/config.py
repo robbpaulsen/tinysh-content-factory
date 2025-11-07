@@ -111,6 +111,12 @@ class Settings(BaseSettings):
         description="Audio bitrate (e.g., 128k, 192k)"
     )
 
+    # SEO Optimization
+    seo_enabled: bool = Field(
+        default=True,
+        description="Enable SEO metadata generation with Gemini"
+    )
+
 
 
 # Global settings instance

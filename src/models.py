@@ -76,3 +76,12 @@ class YouTubeUploadResult(BaseModel):
     video_id: str = Field(..., description="YouTube video ID")
     url: str = Field(..., description="YouTube video URL")
     title: str = Field(..., description="Video title")
+
+
+class SEOMetadata(BaseModel):
+    """SEO-optimized metadata for YouTube videos."""
+
+    title: str = Field(..., description="SEO-optimized video title (max 60 chars)")
+    description: str = Field(..., description="SEO-optimized video description with hashtags")
+    tags: list[str] = Field(..., description="List of relevant tags (10-15 recommended)")
+    category_id: str = Field(default="22", description="YouTube category ID")

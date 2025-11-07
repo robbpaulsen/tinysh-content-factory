@@ -11,6 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.config import settings
 from src.models import Scene, VideoScript
+from src.services.logger_service import log_api_call
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ class LLMService:
     ) -> str:
         """Synchronous version of speech generation (for thread pool)."""
         logger.info(f"Generating {content_type} from story: {story_title[:50]}...")
+        log_api_call("Gemini", "generate_motivational_speech", "starting", logger=logger)
 
         prompt = f"""Based on the following Reddit story, create a compelling {content_type}.
 
@@ -85,11 +87,18 @@ IMPORTANT: Stay within 480-1440 tokens (15-45 seconds). Gemini measures 32 token
 
 Generate only the motivational speech text, nothing else."""
 
-        response = self.model.generate_content(prompt)
-        speech = self._clean_text(response.text)
+        try:
+            response = self.model.generate_content(prompt)
+            speech = self._clean_text(response.text)
 
-        logger.info(f"Generated speech ({len(speech)} chars)")
-        return speech
+            log_api_call("Gemini", "generate_motivational_speech", "success",
+                        details=f"{len(speech)} chars", logger=logger)
+            logger.info(f"Generated speech ({len(speech)} chars)")
+            return speech
+        except Exception as e:
+            log_api_call("Gemini", "generate_motivational_speech", "error",
+                        details=str(e), logger=logger)
+            raise
 
     async def create_motivational_speech(
         self, story_title: str, story_content: str, content_type: str | None = None
@@ -124,6 +133,7 @@ Generate only the motivational speech text, nothing else."""
     def _generate_video_script_sync(self, motivational_text: str, art_style: str) -> VideoScript:
         """Synchronous version of script generation (for thread pool)."""
         logger.info("Creating video script with scenes and image prompts")
+        log_api_call("Gemini", "generate_video_script", "starting", logger=logger)
 
         prompt = f"""You are a video script creator for YouTube Shorts (15-45 seconds). Given a motivational speech, break it into 5-8 scenes.
 
@@ -176,28 +186,38 @@ Return your response as a JSON object with this exact structure:
 
 IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
 
-        response = self.model.generate_content(prompt)
-        response_text = self._clean_text(response.text)
-
-        # Extract JSON from markdown code blocks if present
-        json_match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", response_text, re.DOTALL)
-        if json_match:
-            response_text = json_match.group(1)
-
-        # Parse JSON response
         try:
-            data = json.loads(response_text)
-            script = VideoScript(
-                title=data["title"],
-                description=data["description"],
-                scenes=[Scene(**scene) for scene in data["scenes"]],
-            )
-            logger.info(f"Created script with {len(script.scenes)} scenes")
-            return script
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.debug(f"Raw response: {response_text[:500]}")
-            raise ValueError(f"Invalid JSON response from LLM: {e}") from e
+            response = self.model.generate_content(prompt)
+            response_text = self._clean_text(response.text)
+
+            # Extract JSON from markdown code blocks if present
+            json_match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+
+            # Parse JSON response
+            try:
+                data = json.loads(response_text)
+                script = VideoScript(
+                    title=data["title"],
+                    description=data["description"],
+                    scenes=[Scene(**scene) for scene in data["scenes"]],
+                )
+                log_api_call("Gemini", "generate_video_script", "success",
+                            details=f"{len(script.scenes)} scenes", logger=logger)
+                logger.info(f"Created script with {len(script.scenes)} scenes")
+                return script
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"Failed to parse LLM response as JSON: {e}")
+                logger.debug(f"Raw response: {response_text[:500]}")
+                log_api_call("Gemini", "generate_video_script", "error",
+                            details=f"JSON parse error: {e}", logger=logger)
+                raise ValueError(f"Invalid JSON response from LLM: {e}") from e
+        except Exception as e:
+            if not isinstance(e, ValueError):  # Don't double-log JSON errors
+                log_api_call("Gemini", "generate_video_script", "error",
+                            details=str(e), logger=logger)
+            raise
 
     async def create_video_script(
         self, motivational_text: str, art_style: str | None = None

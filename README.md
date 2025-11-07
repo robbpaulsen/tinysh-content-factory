@@ -240,6 +240,132 @@ FFMPEG_AUDIO_BITRATE=128k
 - ⚡ **Individual Mode**: 5-7 minutes (model loads/unloads each time)
 - ⚡ **Token-Optimized Prompts**: 15-45 second videos (480-1440 tokens)
 
+### SEO Optimization
+
+The system automatically generates SEO-optimized YouTube metadata using Google Gemini:
+
+```bash
+# Enable/disable SEO metadata generation (default: enabled)
+SEO_ENABLED=true
+```
+
+**What it generates:**
+- 📝 **Optimized Titles**: 50-60 characters, clickable, keyword-rich
+- 📋 **Smart Descriptions**: Strategic keywords, hashtags, CTAs
+- 🏷️ **Relevant Tags**: 10-15 tags per video for discoverability
+- 🎯 **Category Selection**: Automatic YouTube category assignment
+- 🎨 **Profile-Aware**: Adapts to your active voice/music profile
+
+**Output:**
+
+Each video generates two files:
+```
+output/
+├── video_001.mp4              # Generated video
+└── video_001_metadata.json    # SEO metadata
+```
+
+**Metadata JSON format:**
+```json
+{
+  "title": "5 Habits That Changed My Life Forever",
+  "description": "Discover powerful habits...\n\n#motivation #shorts #selfimprovement",
+  "tags": ["motivation", "self improvement", "productivity", ...],
+  "category_id": "22",
+  "original_title": "Transform Your Life",
+  "original_description": "A story about...",
+  "profile": "frank_motivational"
+}
+```
+
+**Benefits:**
+- ✅ Saves time: No manual title/description writing
+- ✅ Consistency: Professional metadata for every video
+- ✅ Discoverability: Optimized for YouTube search and recommendations
+- ✅ Scalable: Ready for multi-channel workflows
+
+**To disable SEO optimization:**
+```bash
+# In .env
+SEO_ENABLED=false
+```
+
+### Logging System
+
+The application includes a comprehensive logging system with two modes:
+
+**Simple Mode (default)**:
+```bash
+# Normal operation with progress bars
+python -m src.main generate --count 1
+```
+- INFO level logging
+- Console output only
+- Progress bars and status updates
+- Clean, minimal output
+
+**Verbose Mode**:
+```bash
+# Detailed debugging with file logs
+python -m src.main --verbose generate --count 1
+
+# Or using short flag
+python -m src.main -v generate --count 1
+```
+- DEBUG level logging
+- Console + file output
+- Detailed operation timing
+- API call tracking
+- Full stack traces on errors
+
+**Log Files**:
+
+When enabled, logs are saved to `output/logs/`:
+```
+output/logs/
+├── youtube_shorts_20250107_153045.log
+├── youtube_shorts_20250107_160212.log
+└── ...
+```
+
+**Features**:
+- 📝 **Automatic Rotation**: 10MB max per file, keeps 5 backups
+- 🗑️ **Auto Cleanup**: Removes logs older than 7 days (configurable)
+- ⏱️ **Performance Metrics**: Times every major operation
+- 🔍 **API Tracking**: Logs all Gemini/Together.ai/Media server calls
+- 📊 **Per-Scene Breakdown**: Detailed timing for each video scene
+
+**Configuration**:
+```bash
+# In .env
+
+# Enable/disable file logging
+LOG_TO_FILE=true
+
+# Log directory
+LOG_DIR=output/logs
+
+# Log retention (1-30 days)
+LOG_MAX_AGE_DAYS=7
+```
+
+**Example Verbose Output**:
+```
+[LLM script generation] Completed in 5.23s
+[Scene 1 - Image generation] Completed in 6.45s
+[Scene 1 - TTS generation] Completed in 18.32s
+[Scene 1 - Video generation] Completed in 2.11s
+...
+[Video merge with music] Completed in 1.05s
+[Generate video: Transform Your Life] Completed in 182.45s
+```
+
+**Use Cases**:
+- ✅ **Debugging**: Use verbose mode when something fails
+- ✅ **Performance Tuning**: Identify bottlenecks in your workflow
+- ✅ **Production Runs**: Use simple mode for clean output
+- ✅ **Multi-Channel**: Separate logs help track different channel generations
+
 ## Project Structure
 
 ```

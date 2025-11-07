@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-01-07
+
+### Added
+- **Logging System** - Comprehensive logging infrastructure with two modes
+  - **Simple Mode** (default): INFO level, console only with progress bars
+  - **Verbose Mode** (`--verbose` flag): DEBUG level, console + file with detailed traces
+  - File logging with automatic rotation (10MB per file, 5 backups)
+  - Timestamped log files in `output/logs/`
+  - Automatic cleanup of old log files (configurable retention period)
+- **Performance Metrics** - Detailed operation timing
+  - `log_performance` context manager for measuring operation duration
+  - Tracks: video generation, LLM calls, image/TTS/video generation, merging
+  - Per-scene timing breakdown in verbose mode
+  - Total workflow duration measurement
+- **API Call Logging** - Track external API interactions
+  - Logs all Gemini API calls (speech generation, script creation)
+  - Success/error/retry status tracking
+  - Response metadata (characters generated, scenes created, etc.)
+  - Helps debug API rate limits and failures
+- **CLI Enhancements**
+  - `--verbose` / `-v` global flag for all commands
+  - Automatic log cleanup on startup
+  - Reduced noise from third-party libraries (httpx, google, urllib3)
+- **Configuration** - New logging settings in `.env`
+  - `LOG_TO_FILE` - Enable/disable file logging (default: true)
+  - `LOG_DIR` - Log directory path (default: output/logs)
+  - `LOG_MAX_AGE_DAYS` - Log retention in days (default: 7, range: 1-30)
+
+### Changed
+- **Main CLI** - Replaced basic logging with structured logging service
+- **Workflow** - Integrated performance timing for all major operations
+- **LLM Service** - Added API call logging for Gemini interactions
+
+### Benefits
+- **Debugging**: Detailed logs help troubleshoot failures quickly
+- **Performance Analysis**: Track where time is spent in the workflow
+- **Production Ready**: File logs with rotation prevent disk fill-up
+- **Flexibility**: Toggle between simple and verbose modes as needed
+
+## [0.2.1] - 2025-01-07
+
+### Added
+- **SEO Optimizer Service** - Automatic YouTube metadata generation with Google Gemini
+  - SEO-optimized titles (50-60 characters for max visibility)
+  - Keyword-rich descriptions with strategic hashtags
+  - 10-15 relevant tags per video
+  - Automatic YouTube category selection
+  - Profile-aware content optimization
+  - Configurable via `SEO_ENABLED` environment variable (default: true)
+- **SEO Metadata Model** - Type-safe Pydantic model for metadata validation
+- **Metadata JSON Export** - Each video now generates `video_XXX_metadata.json` with:
+  - SEO-optimized metadata ready for YouTube upload
+  - Original title/description preserved for reference
+  - Profile context for tracking
+- **Configuration** - New `SEO_ENABLED` setting in `.env.example`
+
+### Changed
+- **WorkflowOrchestrator** - Integrated SEO metadata generation after video creation
+- **Video Output** - Now produces both video file and metadata JSON
+- **README** - Updated with SEO optimizer documentation
+
+### Benefits
+- Saves manual time writing YouTube titles and descriptions
+- Improves video discoverability with optimized tags
+- Consistent metadata quality across all videos
+- Ready for multi-channel scaling with different SEO strategies
+
+## [0.2.0] - 2025-01-XX
+
 ### Added
 - **Voice & Music Profile System** - Manage multiple voice and music configurations via `profiles.yaml`
   - Define profiles with voice settings (Chatterbox/Kokoro) and music playlists
@@ -28,9 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-uploads local voice sample files to media server (fixes repeated warnings)
 - Music volume now configurable per profile instead of global setting
 
-## [0.2.0] - 2025-01-XX
-
-### Added
+### Added (v0.2.0 features)
 - **FFmpeg GPU Optimization** - NVENC hardware encoding support for 5-10x faster video processing
   - Configurable encoder: auto-detect, NVENC (GPU), or x264 (CPU)
   - Advanced NVENC settings: preset, CQ, bitrate, spatial/temporal AQ

@@ -126,7 +126,9 @@ class YouTubeService:
             "status": {
                 "privacyStatus": privacy_status,
                 "selfDeclaredMadeForKids": False,
-                "containsSyntheticMedia": True,  # Required for AI-generated content
+                # containsSyntheticMedia: Only TRUE if imitating/impersonating real people
+                # FALSE for generic AI-generated content (images, text, synthetic voices)
+                # Setting TRUE severely limits reach and monetization
             },
         }
 

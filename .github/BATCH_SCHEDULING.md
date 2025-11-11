@@ -248,8 +248,8 @@ After batch upload:
 3. **Check Details**
    - Click video to see full metadata
    - Verify title, description, tags
-   - Check containsSyntheticMedia: Yes
    - Check Made for Kids: No
+   - Check Synthetic Media: Should be No (unless imitating real people)
 
 ## Best Practices
 

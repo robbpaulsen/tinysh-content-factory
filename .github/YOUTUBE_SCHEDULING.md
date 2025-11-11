@@ -24,9 +24,14 @@ YOUTUBE_CATEGORY_ID=22          # 22 = People & Blogs
 
 1. **Privacy Status**: Videos with scheduled publish times MUST be uploaded as `private`
 2. **Category**: Category 22 = "People & Blogs" (suitable for motivational content)
-3. **AI Content Declaration**:
-   - `containsSyntheticMedia: true` - Automatically set (AI-generated content)
+3. **Content Declaration**:
    - `selfDeclaredMadeForKids: false` - Automatically set (not for kids)
+   - `containsSyntheticMedia: false` - NOT set (only required if imitating real people)
+
+   **⚠️ Important**: `containsSyntheticMedia` should ONLY be `true` if your content imitates,
+   impersonates, or deepfakes real people. Generic AI-generated content (images, text,
+   synthetic voices) does NOT require this flag. Setting it to `true` severely limits reach
+   and monetization.
 
 ## Usage
 

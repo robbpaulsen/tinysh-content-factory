@@ -178,16 +178,26 @@ cython_debug/
 .pypirc
 
 # Project-specific
-# Google OAuth tokens
+# Credentials directory (all sensitive files)
+.credentials/
+credentials.json
 token.json
 token_youtube.json
-credentials.json
 client_secrets.json
-token.json
 pickle.json
 
-# Output files
+# Configuration (keep examples)
+config/.env
+!config/.env.example
+!config/profiles.yaml
+
+# Output directories
+output/
 !output/.gitkeep
+logs/
+!logs/.gitkeep
+
+# Media files
 *.mp4
 *.mp3
 *.wav
@@ -195,7 +205,7 @@ pickle.json
 *.jpg
 *.jpeg
 
-# IDE
+# IDE and editors
 .vscode/
 .idea/
 *.swp
@@ -207,7 +217,14 @@ pickle.json
 tmp/
 temp/
 *.tmp
+tools/temp.*
+scripts/temp.*
 
-workflow_youtube_shorts/*.json
-!workflow_youtube_shorts/.gitkeep
+# Legacy code
+docs/legacy/workflow_youtube_shorts/*.json
+!docs/legacy/workflow_youtube_shorts/.gitkeep
+
+# Keep empty directories
 !tools/.gitkeep
+!scripts/.gitkeep
+!tests/.gitkeep

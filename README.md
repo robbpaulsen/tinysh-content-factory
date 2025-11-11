@@ -93,7 +93,7 @@ nano .env  # or use your preferred editor
    - Google Sheets API
    - YouTube Data API v3
 4. Create OAuth 2.0 credentials (Desktop app)
-5. Download `credentials.json` and place in project root
+5. Download `credentials.json` and place in `.credentials/` directory
 
 ### 5. API Keys
 
@@ -155,17 +155,17 @@ ART_STYLE="Create a cinematic image..."  # Full prompt in .env.example
 
 ### Voice & Music Profiles
 
-The system uses **profiles** to manage voice and music configurations, defined in `profiles.yaml`:
+The system uses **profiles** to manage voice and music configurations, defined in `config/profiles.yaml`:
 
 ```bash
-# Optional: Override default profile from profiles.yaml
+# Optional: Override default profile from config/profiles.yaml
 ACTIVE_PROFILE=frank_motivational
 
 # Optional: Path to profiles configuration
-PROFILES_PATH=profiles.yaml
+PROFILES_PATH=config/profiles.yaml
 ```
 
-**Profile Configuration (`profiles.yaml`):**
+**Profile Configuration (`config/profiles.yaml`):**
 
 Each profile includes:
 - **Voice settings**: TTS engine (Kokoro/Chatterbox), voice samples, parameters
@@ -382,9 +382,9 @@ youtube-shorts-factory/
 │       ├── media.py        # Media server client
 │       ├── youtube.py      # YouTube upload
 │       └── profile_manager.py  # Voice/music profiles
-├── workflow_youtube_shorts/
-│   └── workflow_motivational_shorts.json  # Original n8n workflow (reference)
-├── profiles.yaml           # Voice & music profiles
+├── docs/legacy/workflow_youtube_shorts/  # Original n8n workflow (reference)
+├── config/
+│   └── profiles.yaml       # Voice & music profiles
 ├── pyproject.toml          # Dependencies
 ├── .env.example            # Environment template
 └── README.md
@@ -409,7 +409,7 @@ youtube-shorts-factory/
 
 **Sequential Processing:**
 - **Images**: Generated one at a time (Together.ai FLUX-Free requirement)
-- **TTS**: Profile-based voice configuration from `profiles.yaml`
+- **TTS**: Profile-based voice configuration from `config/profiles.yaml`
 - **Videos**: Generated with captions as each TTS completes
 - **Music**: Selected from profile playlist (random or sequential rotation)
 
@@ -458,7 +458,7 @@ python -m src.main check-server
 
 - Delete `token.json` and `token_youtube.json`
 - Run the workflow again to re-authenticate
-- Ensure credentials.json is valid
+- Ensure .credentials/credentials.json is valid
 
 ### Rate Limits
 

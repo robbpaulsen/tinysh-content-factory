@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # Google Credentials
     google_credentials_path: Path = Field(
-        default=Path("credentials.json"),
+        default=Path(".credentials/credentials.json"),
         description="Path to Google OAuth credentials JSON"
     )
 
@@ -51,10 +51,10 @@ class Settings(BaseSettings):
     # Profile System (replaces individual voice/music settings)
     active_profile: str | None = Field(
         default=None,
-        description="Active profile name (uses default from profiles.yaml if None)"
+        description="Active profile name (uses default from config/profiles.yaml if None)"
     )
     profiles_path: Path = Field(
-        default=Path("profiles.yaml"),
+        default=Path("config/profiles.yaml"),
         description="Path to profiles configuration file"
     )
 

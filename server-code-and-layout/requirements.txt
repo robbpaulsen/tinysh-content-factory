@@ -1,0 +1,16 @@
+uuid
+numpy
+kokoro
+soundfile
+fastapi[standard]
+loguru
+chatterbox-tts >= 0.1.2
+faster_whisper
+torchaudio
+requests_tor
+requests[socks]
+youtube-transcript-api
+matplotlib
+Pillow
+nltk
+imageio

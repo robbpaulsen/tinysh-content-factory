@@ -1,6 +1,7 @@
 """YouTube service for video uploads."""
 
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from google.auth.transport.requests import Request
@@ -73,6 +74,7 @@ class YouTubeService:
         tags: list[str] | None = None,
         category_id: str | None = None,
         privacy_status: str | None = None,
+        publish_at: datetime | None = None,
     ) -> YouTubeUploadResult:
         """
         Upload a video to YouTube.
@@ -84,9 +86,14 @@ class YouTubeService:
             tags: List of tags (optional)
             category_id: YouTube category ID (optional, defaults to settings)
             privacy_status: Privacy status (optional, defaults to settings)
+            publish_at: Scheduled publish time (optional, requires privacy="private")
 
         Returns:
             YouTubeUploadResult with video ID and URL
+
+        Note:
+            If publish_at is set, video will be uploaded as private and scheduled.
+            YouTube requires RFC 3339 format: YYYY-MM-DDTHH:MM:SS.sZ
         """
         if not video_path.exists():
             raise FileNotFoundError(f"Video file not found: {video_path}")
@@ -101,6 +108,13 @@ class YouTubeService:
         logger.info(f"Uploading video to YouTube: {title}")
         logger.info(f"Privacy: {privacy_status}, Category: {category_id}")
 
+        # Validate scheduling requirements
+        if publish_at and privacy_status != "private":
+            logger.warning(
+                "Scheduled videos must be private. Forcing privacy_status='private'"
+            )
+            privacy_status = "private"
+
         # Prepare request body
         body = {
             "snippet": {
@@ -112,8 +126,16 @@ class YouTubeService:
             "status": {
                 "privacyStatus": privacy_status,
                 "selfDeclaredMadeForKids": False,
+                "containsSyntheticMedia": True,  # Required for AI-generated content
             },
         }
+
+        # Add scheduled publish time if provided
+        if publish_at:
+            # Convert to RFC 3339 format required by YouTube
+            publish_time_str = publish_at.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            body["status"]["publishAt"] = publish_time_str
+            logger.info(f"Video scheduled for: {publish_time_str}")
 
         # Create media upload
         media = MediaFileUpload(

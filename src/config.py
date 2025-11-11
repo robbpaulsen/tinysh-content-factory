@@ -68,12 +68,12 @@ class Settings(BaseSettings):
 
     # YouTube
     youtube_privacy_status: Literal["public", "private", "unlisted"] = Field(
-        default="public",
-        description="YouTube video privacy status"
+        default="private",
+        description="YouTube video privacy status (default: private for scheduling)"
     )
     youtube_category_id: str = Field(
-        default="24",
-        description="YouTube video category (24=Entertainment)"
+        default="22",
+        description="YouTube video category (22=People & Blogs)"
     )
 
     # Retry Configuration

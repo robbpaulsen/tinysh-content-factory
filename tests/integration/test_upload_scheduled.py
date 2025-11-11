@@ -53,7 +53,9 @@ async def generate_metadata_for_video(video_path: Path) -> dict:
 
     # Generate SEO-optimized metadata
     metadata = await seo_optimizer.generate_seo_metadata(
-        script=mock_script,
+        video_title=mock_script.title,
+        video_description=mock_script.description,
+        script_text=mock_script.scenes[0].text,
         profile_name="test_profile",
     )
 

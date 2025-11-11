@@ -75,6 +75,28 @@ class Settings(BaseSettings):
         default="22",
         description="YouTube video category (22=People & Blogs)"
     )
+    youtube_timezone: str = Field(
+        default="America/Chicago",
+        description="Timezone for scheduling (e.g., America/Chicago, America/New_York)"
+    )
+    youtube_schedule_start_hour: int = Field(
+        default=6,
+        ge=0,
+        le=23,
+        description="First video publish hour (24h format, default: 6 = 6 AM)"
+    )
+    youtube_schedule_end_hour: int = Field(
+        default=16,
+        ge=0,
+        le=23,
+        description="Last video publish hour (24h format, default: 16 = 4 PM)"
+    )
+    youtube_schedule_interval_hours: int = Field(
+        default=2,
+        ge=1,
+        le=12,
+        description="Hours between video publishes (default: 2)"
+    )
 
     # Retry Configuration
     max_retries: int = Field(default=3, description="Maximum retry attempts")

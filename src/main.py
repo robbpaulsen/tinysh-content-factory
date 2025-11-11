@@ -229,5 +229,74 @@ def init():
     console.print("5. Run: python -m src.main generate --count 1\n")
 
 
+@cli.command()
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Calculate schedule but don't upload (preview only)",
+)
+@click.option(
+    "--start-date",
+    default=None,
+    help="Start date for scheduling (YYYY-MM-DD, default: tomorrow)",
+)
+def schedule_uploads(dry_run: bool, start_date: str | None):
+    """
+    Schedule batch upload of all videos in output/ directory.
+
+    Uploads all videos with automatic scheduling:
+    - Daily: 6 AM, 8 AM, 10 AM, 12 PM, 2 PM, 4 PM (6 videos/day)
+    - Videos uploaded as private with scheduled publish times
+    - Uses SEO metadata from JSON files if available
+
+    Examples:
+        # Preview schedule without uploading
+        python -m src.main schedule-uploads --dry-run
+
+        # Upload and schedule starting tomorrow
+        python -m src.main schedule-uploads
+
+        # Upload and schedule starting specific date
+        python -m src.main schedule-uploads --start-date 2025-11-15
+    """
+    from datetime import datetime
+
+    async def run():
+        orchestrator = WorkflowOrchestrator()
+        try:
+            # Parse start date if provided
+            start_datetime = None
+            if start_date:
+                try:
+                    start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+                    console.print(f"[cyan]Starting schedule from: {start_date}[/cyan]\n")
+                except ValueError:
+                    console.print("[red]✗ Invalid date format. Use YYYY-MM-DD[/red]")
+                    return
+
+            # Run batch scheduling
+            results = await orchestrator.schedule_batch_upload(
+                start_date=start_datetime,
+                dry_run=dry_run,
+            )
+
+            if results and not dry_run:
+                # Save results to CSV for reference
+                import csv
+                output_file = Path("output/scheduled_videos.csv")
+                with open(output_file, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Video Path", "Publish Time (UTC)", "YouTube URL"])
+                    for video_path, publish_time, url in results:
+                        writer.writerow([video_path, publish_time.isoformat(), url])
+
+                console.print(f"[green]✓ Schedule saved to {output_file}[/green]\n")
+
+        finally:
+            await orchestrator.close()
+
+    asyncio.run(run())
+
+
 if __name__ == "__main__":
     cli()

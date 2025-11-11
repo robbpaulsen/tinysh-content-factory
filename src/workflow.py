@@ -3,10 +3,12 @@
 import asyncio
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from src.config import settings
 from src.models import GeneratedVideo, SEOMetadata, StoryRecord, VideoScript
@@ -15,6 +17,7 @@ from src.services.logger_service import log_performance
 from src.services.media import MediaService
 from src.services.profile_manager import ProfileManager
 from src.services.reddit import RedditService
+from src.services.scheduler import VideoScheduler
 from src.services.seo_optimizer import SEOOptimizerService
 from src.services.sheets import GoogleSheetsService
 from src.services.youtube import YouTubeService
@@ -400,3 +403,159 @@ class WorkflowOrchestrator:
             logger.exception("Single story workflow failed")
             console.print(f"\n[bold red]❌ Error: {e}[/bold red]\n")
             raise
+    async def schedule_batch_upload(
+        self,
+        start_date: datetime | None = None,
+        dry_run: bool = False,
+    ) -> list[tuple[str, datetime, str]]:
+        """
+        Schedule batch upload of all generated videos from Sheets.
+
+        This function:
+        1. Reads all available videos from output/ directory
+        2. Loads corresponding metadata from JSON files
+        3. Calculates publish schedule (6 AM - 4 PM, every 2 hours, 6 videos/day)
+        4. Uploads videos to YouTube with scheduled publish times
+
+        Args:
+            start_date: Start date for scheduling (default: tomorrow 6 AM)
+            dry_run: If True, calculate schedule but don't upload
+
+        Returns:
+            List of tuples: (video_path, publish_time, video_url)
+        """
+        console.print("\n[bold cyan]📅 Batch Video Scheduling[/bold cyan]\n")
+
+        output_dir = Path("./output")
+        if not output_dir.exists():
+            console.print("[red]✗ Output directory not found[/red]")
+            return []
+
+        # Find all video files
+        video_files = sorted(output_dir.glob("video_*.mp4"))
+        if not video_files:
+            console.print("[yellow]⚠ No videos found in output/[/yellow]")
+            return []
+
+        console.print(f"Found {len(video_files)} videos to schedule\n")
+
+        # Initialize scheduler
+        scheduler = VideoScheduler()
+
+        # Calculate schedule
+        publish_schedule = scheduler.calculate_schedule(
+            video_count=len(video_files),
+            start_date=start_date,
+        )
+
+        # Display schedule summary
+        summary = scheduler.get_schedule_summary(publish_schedule)
+        console.print(f"[cyan]{summary}[/cyan]\n")
+
+        # Validate schedule
+        try:
+            scheduler.validate_schedule(publish_schedule)
+            console.print("[green]✓ Schedule validation passed[/green]\n")
+        except ValueError as e:
+            console.print(f"[red]✗ Schedule validation failed: {e}[/red]")
+            return []
+
+        if dry_run:
+            console.print("[yellow]🔍 Dry run mode - no uploads will be performed[/yellow]\n")
+
+            # Display detailed schedule table
+            table = Table(title="Scheduled Videos (Dry Run)")
+            table.add_column("Video", style="cyan")
+            table.add_column("Publish Time (Local)", style="green")
+            table.add_column("Publish Time (UTC)", style="blue")
+
+            for video_file, publish_time in zip(video_files, publish_schedule):
+                publish_local = publish_time.astimezone(scheduler.timezone)
+                table.add_row(
+                    video_file.name,
+                    publish_local.strftime("%Y-%m-%d %H:%M"),
+                    publish_time.strftime("%Y-%m-%d %H:%M"),
+                )
+
+            console.print(table)
+            return [(str(vf), pt, "dry-run") for vf, pt in zip(video_files, publish_schedule)]
+
+        # Upload videos with scheduling
+        console.print("[bold cyan]📤 Starting batch upload...[/bold cyan]\n")
+
+        results = []
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(
+                f"[cyan]Uploading {len(video_files)} videos...", total=len(video_files)
+            )
+
+            for i, (video_file, publish_time) in enumerate(zip(video_files, publish_schedule), 1):
+                progress.update(
+                    task,
+                    description=f"[cyan]Uploading {i}/{len(video_files)}: {video_file.name}...",
+                )
+
+                try:
+                    # Load metadata if exists
+                    metadata_file = video_file.with_suffix("").with_suffix(".json").name
+                    metadata_path = output_dir / f"{metadata_file.replace('.mp4', '')}_metadata.json"
+
+                    title = None
+                    description = None
+                    tags = None
+                    category_id = None
+
+                    if metadata_path.exists():
+                        with open(metadata_path, encoding="utf-8") as f:
+                            metadata = json.load(f)
+                            title = metadata.get("title")
+                            description = metadata.get("description")
+                            tags = metadata.get("tags")
+                            category_id = metadata.get("category_id")
+
+                    # Fallback to defaults if metadata not found
+                    if not title:
+                        title = f"Motivational Short {i}"
+                        logger.warning(f"No metadata found for {video_file.name}, using default title")
+
+                    if not description:
+                        description = "An inspiring motivational message. #motivation #shorts"
+
+                    if not tags:
+                        tags = ["motivation", "shorts", "inspiration", "self-improvement"]
+
+                    # Upload with scheduling
+                    result = self.youtube.upload_video(
+                        video_path=video_file,
+                        title=title,
+                        description=description,
+                        tags=tags,
+                        category_id=category_id,
+                        privacy_status="private",
+                        publish_at=publish_time,
+                    )
+
+                    publish_local = publish_time.astimezone(scheduler.timezone)
+                    console.print(
+                        f"[green]✓ {video_file.name} → "
+                        f"{publish_local.strftime('%Y-%m-%d %H:%M')} → {result.url}[/green]"
+                    )
+
+                    results.append((str(video_file), publish_time, result.url))
+
+                except Exception as e:
+                    logger.exception(f"Failed to upload {video_file.name}")
+                    console.print(f"[red]✗ {video_file.name}: {e}[/red]")
+                    results.append((str(video_file), publish_time, f"ERROR: {e}"))
+
+                progress.advance(task)
+
+        console.print(f"\n[bold green]🎉 Batch upload complete![/bold green]")
+        console.print(f"Uploaded: {len([r for r in results if not r[2].startswith('ERROR')])} videos")
+        console.print(f"Failed: {len([r for r in results if r[2].startswith('ERROR')])} videos\n")
+
+        return results

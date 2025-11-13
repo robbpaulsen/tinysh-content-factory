@@ -11,6 +11,27 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
+def parse_rfc3339_datetime(rfc3339_str: str) -> datetime:
+    """
+    Parse RFC 3339 datetime string to datetime object.
+
+    YouTube API returns publishAt in format: 2025-11-15T12:00:00.000Z
+
+    Args:
+        rfc3339_str: RFC 3339 formatted datetime string
+
+    Returns:
+        datetime object in UTC
+    """
+    # Remove milliseconds and Z suffix, then parse
+    dt_str = rfc3339_str.replace(".000Z", "").replace("Z", "")
+    dt = datetime.fromisoformat(dt_str)
+    # Ensure UTC timezone
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=pytz.UTC)
+    return dt
+
+
 class VideoScheduler:
     """Service for calculating YouTube video publish schedules."""
 
@@ -197,3 +218,109 @@ class VideoScheduler:
 
         logger.debug(f"Schedule validation passed for {len(schedule)} videos")
         return True
+
+    def calculate_next_available_slot(
+        self,
+        existing_scheduled_videos: list[dict],
+    ) -> datetime:
+        """
+        Calculate the next available time slot based on existing scheduled videos.
+
+        This implements the "fill gaps" logic:
+        - If there are gaps in today's schedule, fill them
+        - If today is full (last slot at end_hour or later), start tomorrow
+        - If no videos scheduled, start tomorrow at start_hour
+
+        Args:
+            existing_scheduled_videos: List of dicts with 'publishAt' (RFC 3339 string)
+
+        Returns:
+            Next available datetime in UTC
+        """
+        now_utc = datetime.now(pytz.UTC)
+        now_local = now_utc.astimezone(self.timezone)
+
+        # Parse existing scheduled times
+        scheduled_times = []
+        for video in existing_scheduled_videos:
+            publish_at_str = video.get("publishAt")
+            if publish_at_str:
+                try:
+                    dt_utc = parse_rfc3339_datetime(publish_at_str)
+                    dt_local = dt_utc.astimezone(self.timezone)
+                    scheduled_times.append(dt_local)
+                except Exception as e:
+                    logger.warning(f"Failed to parse publishAt: {publish_at_str} - {e}")
+
+        # Sort scheduled times
+        scheduled_times.sort()
+
+        if not scheduled_times:
+            # No videos scheduled - start tomorrow at start_hour
+            logger.info("No scheduled videos found. Starting tomorrow at start_hour.")
+            tomorrow = now_local + timedelta(days=1)
+            next_slot = tomorrow.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            return next_slot.astimezone(pytz.UTC)
+
+        # Find the last scheduled video
+        last_scheduled = scheduled_times[-1]
+        logger.info(f"Last scheduled video: {last_scheduled.strftime('%Y-%m-%d %H:%M')}")
+
+        # Check if last scheduled is today
+        if last_scheduled.date() == now_local.date():
+            # There are videos scheduled for today
+            # Find next available slot for today
+            current_hour = last_scheduled.hour + self.interval_hours
+
+            if current_hour <= self.end_hour:
+                # There's still a slot available today
+                next_slot = last_scheduled.replace(hour=current_hour, minute=0, second=0, microsecond=0)
+                logger.info(f"Next slot available today: {next_slot.strftime('%Y-%m-%d %H:%M')}")
+                return next_slot.astimezone(pytz.UTC)
+            else:
+                # Today is full, move to tomorrow
+                logger.info("Today's schedule is full. Moving to tomorrow.")
+                next_day = last_scheduled + timedelta(days=1)
+                next_slot = next_day.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+                return next_slot.astimezone(pytz.UTC)
+        else:
+            # Last scheduled video is in the future (not today)
+            # Check if we can fill gaps in between
+
+            # Find all days with scheduled videos
+            scheduled_dates = sorted(set(dt.date() for dt in scheduled_times))
+
+            # Check each day for gaps
+            for date in scheduled_dates:
+                # Get all scheduled times for this day
+                day_schedule = [dt for dt in scheduled_times if dt.date() == date]
+                day_schedule.sort()
+
+                # Find gaps in this day's schedule
+                expected_hour = self.start_hour
+                for scheduled_dt in day_schedule:
+                    if scheduled_dt.hour > expected_hour:
+                        # Found a gap!
+                        gap_slot = scheduled_dt.replace(hour=expected_hour, minute=0, second=0, microsecond=0)
+                        logger.info(f"Found gap to fill: {gap_slot.strftime('%Y-%m-%d %H:%M')}")
+                        return gap_slot.astimezone(pytz.UTC)
+                    expected_hour = scheduled_dt.hour + self.interval_hours
+
+                # Check if there's room at the end of this day
+                last_hour_of_day = day_schedule[-1].hour
+                if last_hour_of_day + self.interval_hours <= self.end_hour:
+                    # There's a slot at the end of this day
+                    end_slot = day_schedule[-1].replace(
+                        hour=last_hour_of_day + self.interval_hours,
+                        minute=0,
+                        second=0,
+                        microsecond=0
+                    )
+                    logger.info(f"Slot available at end of day: {end_slot.strftime('%Y-%m-%d %H:%M')}")
+                    return end_slot.astimezone(pytz.UTC)
+
+            # No gaps found - schedule after the last scheduled video
+            next_day = last_scheduled + timedelta(days=1)
+            next_slot = next_day.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            logger.info(f"No gaps found. Next slot: {next_slot.strftime('%Y-%m-%d %H:%M')}")
+            return next_slot.astimezone(pytz.UTC)

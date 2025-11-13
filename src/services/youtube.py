@@ -16,7 +16,10 @@ from src.models import YouTubeUploadResult
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+]
 
 
 class YouTubeService:
@@ -231,3 +234,196 @@ class YouTubeService:
         self.service.videos().delete(id=video_id).execute()
 
         logger.info(f"Video deleted: {video_id}")
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=30),
+        reraise=True,
+    )
+    def upload_video_as_private(
+        self,
+        video_path: Path,
+        filename: str,
+    ) -> YouTubeUploadResult:
+        """
+        Upload a video to YouTube as PRIVATE with temporary metadata.
+
+        This is Phase 1 of the 2-phase upload/schedule system.
+        The video will be uploaded with minimal metadata and can be
+        scheduled later using update_video_schedule().
+
+        Args:
+            video_path: Path to video file
+            filename: Original filename for tracking
+
+        Returns:
+            YouTubeUploadResult with video ID and URL
+        """
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+
+        # Use temporary metadata for initial upload
+        temporary_title = "Uploading... (metadata pending)"
+        temporary_description = "This video is being processed. Metadata will be updated shortly."
+
+        logger.info(f"Uploading video as private: {filename}")
+
+        # Prepare request body with minimal metadata
+        body = {
+            "snippet": {
+                "title": temporary_title,
+                "description": temporary_description,
+                "categoryId": settings.youtube_category_id,
+            },
+            "status": {
+                "privacyStatus": "private",
+                "selfDeclaredMadeForKids": False,
+            },
+        }
+
+        # Create media upload
+        media = MediaFileUpload(
+            str(video_path),
+            chunksize=-1,  # Upload in a single request
+            resumable=True,
+        )
+
+        # Execute upload
+        request = self.service.videos().insert(
+            part="snippet,status",
+            body=body,
+            media_body=media,
+        )
+
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                progress = int(status.progress() * 100)
+                logger.info(f"Upload progress: {progress}%")
+
+        video_id = response["id"]
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+        logger.info(f"Video uploaded successfully (private): {video_url}")
+
+        return YouTubeUploadResult(
+            video_id=video_id,
+            url=video_url,
+            title=temporary_title,
+        )
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+    )
+    def update_video_schedule(
+        self,
+        video_id: str,
+        title: str,
+        description: str,
+        tags: list[str],
+        category_id: str,
+        publish_at: datetime,
+    ):
+        """
+        Update video with final metadata and schedule for publication.
+
+        This is Phase 2 of the 2-phase upload/schedule system.
+        Updates an already uploaded private video with final metadata
+        and sets the scheduled publish time.
+
+        Args:
+            video_id: YouTube video ID
+            title: Final video title
+            description: Final video description
+            tags: List of tags
+            category_id: YouTube category ID
+            publish_at: Scheduled publish time (UTC)
+        """
+        logger.info(f"Scheduling video {video_id} for {publish_at.strftime('%Y-%m-%d %H:%M UTC')}")
+
+        # Truncate to YouTube limits
+        title = title[:100]
+        description = description[:5000]
+
+        # Convert to RFC 3339 format
+        publish_time_str = publish_at.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+        # Prepare update body
+        body = {
+            "id": video_id,
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": tags,
+                "categoryId": category_id,
+            },
+            "status": {
+                "privacyStatus": "private",
+                "publishAt": publish_time_str,
+                "selfDeclaredMadeForKids": False,
+            },
+        }
+
+        # Execute update
+        self.service.videos().update(
+            part="snippet,status",
+            body=body,
+        ).execute()
+
+        logger.info(f"Video {video_id} scheduled successfully for {publish_time_str}")
+
+    def get_scheduled_videos(self, max_results: int = 50) -> list[dict]:
+        """
+        Get all scheduled videos from the authenticated channel.
+
+        Returns videos that are private with a publishAt time set.
+        Used to determine the next available time slot.
+
+        Args:
+            max_results: Maximum number of videos to fetch (default: 50)
+
+        Returns:
+            List of video dictionaries with id, publishAt, and snippet info
+        """
+        logger.info("Fetching scheduled videos from channel")
+
+        try:
+            # Get channel's uploaded videos playlist
+            channels_response = self.service.channels().list(
+                part="contentDetails",
+                mine=True,
+            ).execute()
+
+            if not channels_response.get("items"):
+                logger.warning("No channel found for authenticated user")
+                return []
+
+            # Get videos from the channel
+            videos_response = self.service.videos().list(
+                part="snippet,status",
+                chart="mostPopular",  # This doesn't work for getting own videos
+                mine=True,
+                maxResults=max_results,
+            ).execute()
+
+            scheduled_videos = []
+            for video in videos_response.get("items", []):
+                status = video.get("status", {})
+
+                # Check if video is private and has publishAt set
+                if status.get("privacyStatus") == "private" and status.get("publishAt"):
+                    scheduled_videos.append({
+                        "id": video["id"],
+                        "title": video["snippet"]["title"],
+                        "publishAt": status["publishAt"],
+                    })
+
+            logger.info(f"Found {len(scheduled_videos)} scheduled videos")
+            return scheduled_videos
+
+        except Exception as e:
+            logger.error(f"Error fetching scheduled videos: {e}")
+            return []

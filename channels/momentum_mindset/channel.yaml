@@ -1,0 +1,76 @@
+# MomentumMindset Channel Configuration
+# Motivational shorts for personal growth
+
+name: "Momentum Mindset"
+description: "Daily motivational shorts for personal growth and self-improvement"
+handle: "@MomentumMindset"
+
+# Channel type
+channel_type: "ai_generated_shorts"  # ai_generated_shorts, ai_generated_videos, youtube_compilation
+
+# Content settings
+content:
+  format: "shorts"
+  duration_range: [15, 45]  # seconds
+  subreddit: "selfimprovement"
+  backup_subreddits:
+    - "getdisciplined"
+    - "DecidingToBeBetter"
+    - "productivity"
+  content_type: "motivational speech"
+  topics:
+    - personal growth
+    - self improvement
+    - productivity
+    - mindset
+    - discipline
+    - motivation
+
+# Video format
+video:
+  aspect_ratio: "9:16"  # Shorts vertical format
+  width: 768
+  height: 1344
+
+# Scene settings
+scenes:
+  count_range: [3, 8]  # Number of scenes per video
+
+# Image generation (FLUX)
+image:
+  model: "black-forest-labs/FLUX.1-schnell-Free"
+  style: "cinematic, dramatic lighting, inspirational atmosphere, golden hour, professional photography"
+
+# YouTube upload settings
+youtube:
+  category_id: "22"  # People & Blogs
+  made_for_kids: false
+  schedule:
+    videos_per_day: 6
+    start_hour: 6   # 6 AM
+    end_hour: 16    # 4 PM
+    interval_hours: 2
+    timezone: "America/Chicago"
+  default_tags:
+    - motivation
+    - shorts
+    - self improvement
+    - personal growth
+    - mindset
+    - productivity
+
+# SEO settings
+seo:
+  enabled: true
+  channel_name: "MomentumMindset"
+  target_audience: "people seeking personal growth and motivation"
+  primary_keywords:
+    - motivation
+    - self improvement
+    - productivity
+    - mindset
+    - personal development
+
+# Voice & Music
+default_profile: "frank_motivational"
+profiles_path: "profiles.yaml"

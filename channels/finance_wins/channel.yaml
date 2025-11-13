@@ -1,0 +1,102 @@
+# FinanceWins Channel Configuration
+# Compilations of best finance content from YouTube
+
+name: "Finance Wins Compiled"
+description: "Best finance tips and success stories compiled"
+handle: "@FinanceWinsCompiled"
+
+# Channel type
+channel_type: "youtube_compilation"  # Different from AI generation
+
+# Content settings
+content:
+  format: "compilation_video"
+  duration_range: [180, 600]  # 3-10 minutes
+  compilation_type: "top_N"  # top_5, top_10, best_of
+
+# Video format
+video:
+  aspect_ratio: "16:9"  # Regular video format
+  width: 1920
+  height: 1080
+
+# Compilation settings
+compilation:
+  clips_per_video: [5, 10]  # 5-10 clips per compilation
+  clip_duration_max: 60  # Max 60 seconds per clip
+  transitions: "fade"
+  add_text_overlays: true  # "#1", "#2", etc.
+  add_intro: false  # Set to true when intro video is created
+  add_outro: false  # Set to true when outro video is created
+
+# YouTube download settings
+youtube_download:
+  search_queries:
+    - "passive income ideas shorts"
+    - "investment tips shorts"
+    - "money management shorts"
+    - "financial freedom shorts"
+    - "crypto trading tips shorts"
+    - "side hustle ideas shorts"
+    - "how to save money shorts"
+    - "best investments shorts"
+  max_results_per_query: 20
+  min_views: 10000  # Only videos with 10k+ views
+  max_days_old: 90  # Only videos from last 90 days
+  download_format: "best[height<=1080]"
+
+# Background music
+background_music:
+  enabled: true
+  volume: 0.15
+  tracks:
+    - "corporate_upbeat.mp3"
+    - "professional_smooth.mp3"
+
+# YouTube upload settings
+youtube:
+  category_id: "24"  # Entertainment
+  made_for_kids: false
+  schedule:
+    videos_per_day: 4
+    start_hour: 10   # 10 AM (different times)
+    end_hour: 22     # 10 PM
+    interval_hours: 3
+    timezone: "America/Chicago"
+  default_tags:
+    - finance
+    - money
+    - compilation
+    - best of
+    - investing
+    - passive income
+    - financial tips
+
+# SEO settings
+seo:
+  enabled: true
+  channel_name: "FinanceWins"
+  target_audience: "people interested in finance success stories"
+  primary_keywords:
+    - finance compilation
+    - money tips
+    - investing ideas
+    - passive income
+    - financial success
+
+# Text overlays config
+text_overlays:
+  enabled: true
+  position: "top_center"
+  font: "Arial Bold"
+  font_size: 72
+  color: "white"
+  stroke_color: "black"
+  stroke_width: 3
+  animation: "fade_in"
+  templates:
+    top_10: "#{{number}} - {{title}}"
+    best_of: "{{title}}"
+
+# No voice profile needed (compilation only)
+default_profile: null

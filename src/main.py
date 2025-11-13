@@ -44,6 +44,52 @@ def cli(ctx, verbose: bool):
 
 
 @cli.command()
+def list_channels():
+    """List all available channels and their configurations."""
+    from rich.table import Table
+    from src.channel_config import ChannelConfig
+
+    console.print("\n[bold cyan]📺 Available Channels[/bold cyan]\n")
+
+    channels = ChannelConfig.list_available_channels()
+
+    if not channels:
+        console.print("[yellow]No channels found in channels/ directory[/yellow]")
+        console.print("\nRun: python -m src.main init-channel --name <channel_name>")
+        return
+
+    table = Table(title="Configured Channels")
+    table.add_column("Channel", style="cyan")
+    table.add_column("Name", style="green")
+    table.add_column("Type", style="yellow")
+    table.add_column("Handle", style="blue")
+    table.add_column("Format", style="magenta")
+
+    for channel_name in channels:
+        try:
+            config = ChannelConfig(channel_name)
+            table.add_row(
+                channel_name,
+                config.config.name,
+                config.config.channel_type.replace("_", " ").title(),
+                config.config.handle,
+                f"{config.config.video.aspect_ratio} ({config.config.content.format})",
+            )
+        except Exception as e:
+            logger.error(f"Error loading {channel_name}: {e}")
+            table.add_row(
+                channel_name,
+                "[red]ERROR[/red]",
+                "[red]Invalid config[/red]",
+                "-",
+                "-",
+            )
+
+    console.print(table)
+    console.print()
+
+
+@cli.command()
 @click.option(
     "--subreddit",
     "-s",

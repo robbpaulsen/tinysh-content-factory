@@ -1,0 +1,59 @@
+# Voice & Music Profiles for WealthWisdom Channel
+# Professional and trustworthy voices for finance content
+
+profiles:
+  brody_professional:
+    name: "Brody - Professional Financial Advisor"
+    description: "Calm, trustworthy, professional tone for finance tips"
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/brody/sample.mp3"
+      temperature: 0.6  # More controlled
+      cfg_weight: 0.70  # Higher accuracy
+      exaggeration: 0.40  # Less dramatic
+    music:
+      playlist:
+        - path: "D:/Music/finance/corporate_smooth.mp3"
+          name: "Corporate Smooth"
+        - path: "D:/Music/finance/professional_upbeat.mp3"
+          name: "Professional Upbeat"
+        - path: "D:/Music/finance/success_theme.mp3"
+          name: "Success Theme"
+      volume: 0.08  # Lower volume for professional feel
+      rotation: sequential
+
+  denzel_authority:
+    name: "Denzel - Authority Figure"
+    description: "Strong, authoritative voice for serious finance topics"
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/denzel/sample.mp3"
+      temperature: 0.7
+      cfg_weight: 0.68
+      exaggeration: 0.50
+    music:
+      playlist:
+        - path: "D:/Music/finance/power_theme.mp3"
+          name: "Power Theme"
+        - path: "D:/Music/finance/confident_jazz.mp3"
+          name: "Confident Jazz"
+      volume: 0.08
+      rotation: random
+
+  kokoro_neutral:
+    name: "Kokoro - Neutral Professional"
+    description: "Fast TTS without cloning, neutral professional tone"
+    voice:
+      engine: kokoro
+      temperature: 0.6
+      cfg_weight: 0.70
+      exaggeration: 0.30
+    music:
+      playlist:
+        - path: "D:/Music/finance/corporate_smooth.mp3"
+          name: "Corporate Smooth"
+      volume: 0.08
+      rotation: sequential
+
+# Default profile for this channel
+default_profile: brody_professional

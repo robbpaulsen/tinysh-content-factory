@@ -231,6 +231,264 @@ def init():
 
 @cli.command()
 @click.option(
+    "--limit",
+    "-l",
+    default=20,
+    type=int,
+    help="Maximum number of videos to upload (default: 20, YouTube API daily limit)",
+)
+def batch_upload(limit: int):
+    """
+    Phase 1: Upload videos to YouTube as PRIVATE with temporary metadata.
+
+    Uploads all video files in output/ directory to YouTube as private videos
+    with temporary metadata. Video IDs are saved to output/video_ids.csv for
+    later scheduling.
+
+    This is the first phase of the 2-phase upload/schedule system.
+    After uploading, use 'batch-schedule' to set final metadata and publish times.
+
+    Examples:
+        # Upload all videos (max 20 per day)
+        python -m src.main batch-upload
+
+        # Upload only 5 videos
+        python -m src.main batch-upload --limit 5
+    """
+    import csv
+    from src.services.youtube import YouTubeService
+
+    async def run():
+        console.print("\n[bold cyan]📤 Phase 1: Batch Upload (Private)[/bold cyan]\n")
+
+        output_dir = Path("./output")
+        if not output_dir.exists():
+            console.print("[red]✗ Output directory not found[/red]")
+            return
+
+        # Find all video files
+        video_files = sorted(output_dir.glob("video_*.mp4"))
+        if not video_files:
+            console.print("[yellow]⚠ No videos found in output/[/yellow]")
+            return
+
+        # Limit to avoid API quota issues
+        if len(video_files) > limit:
+            console.print(f"[yellow]⚠ Found {len(video_files)} videos, limiting to {limit} (API limit)[/yellow]")
+            video_files = video_files[:limit]
+
+        console.print(f"Found {len(video_files)} videos to upload\n")
+
+        # Initialize YouTube service
+        youtube = YouTubeService()
+
+        # Upload videos and collect video IDs
+        uploaded_videos = []
+        failed_videos = []
+
+        for i, video_file in enumerate(video_files, 1):
+            console.print(f"[cyan]Uploading {i}/{len(video_files)}: {video_file.name}[/cyan]")
+
+            try:
+                result = youtube.upload_video_as_private(
+                    video_path=video_file,
+                    filename=video_file.name,
+                )
+                uploaded_videos.append((video_file.name, result.video_id))
+                console.print(f"[green]✓ Uploaded: {result.video_id}[/green]\n")
+
+            except Exception as e:
+                logger.exception(f"Failed to upload {video_file.name}")
+                console.print(f"[red]✗ Failed: {e}[/red]\n")
+                failed_videos.append(video_file.name)
+
+        # Save video IDs to CSV
+        if uploaded_videos:
+            csv_path = output_dir / "video_ids.csv"
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["filename", "video_id"])
+                writer.writerows(uploaded_videos)
+
+            console.print(f"[green]✓ Saved {len(uploaded_videos)} video IDs to {csv_path}[/green]\n")
+
+        # Summary
+        console.print("[bold cyan]Upload Summary:[/bold cyan]")
+        console.print(f"  ✓ Uploaded: {len(uploaded_videos)}")
+        console.print(f"  ✗ Failed: {len(failed_videos)}")
+
+        if uploaded_videos:
+            console.print("\n[bold green]Next step:[/bold green]")
+            console.print("  Run: python -m src.main batch-schedule")
+            console.print("  This will set final metadata and schedule publish times.\n")
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Preview schedule without updating videos",
+)
+def batch_schedule(dry_run: bool):
+    """
+    Phase 2: Schedule uploaded videos with final metadata and publish times.
+
+    Reads video_ids.csv and metadata JSON files, calculates optimal publish
+    schedule (filling gaps in existing schedule), and updates videos with
+    final metadata and scheduled publish times.
+
+    This is the second phase of the 2-phase upload/schedule system.
+    Videos must be uploaded first using 'batch-upload'.
+
+    The scheduler will:
+    - Check for existing scheduled videos on YouTube
+    - Fill gaps in the schedule (6 AM - 4 PM, every 2 hours)
+    - If today is full, start tomorrow at 6 AM
+    - Update videos with SEO-optimized metadata
+
+    Examples:
+        # Preview schedule
+        python -m src.main batch-schedule --dry-run
+
+        # Schedule videos
+        python -m src.main batch-schedule
+    """
+    import csv
+    import json
+    from src.services.youtube import YouTubeService
+    from src.services.scheduler import VideoScheduler
+    from rich.table import Table
+
+    async def run():
+        console.print("\n[bold cyan]📅 Phase 2: Batch Schedule[/bold cyan]\n")
+
+        output_dir = Path("./output")
+        csv_path = output_dir / "video_ids.csv"
+
+        if not csv_path.exists():
+            console.print("[red]✗ video_ids.csv not found[/red]")
+            console.print("[yellow]Run 'batch-upload' first to upload videos[/yellow]")
+            return
+
+        # Read video IDs
+        video_data = []
+        with open(csv_path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            video_data = list(reader)
+
+        if not video_data:
+            console.print("[yellow]⚠ No videos in video_ids.csv[/yellow]")
+            return
+
+        console.print(f"Found {len(video_data)} uploaded videos\n")
+
+        # Initialize services
+        youtube = YouTubeService()
+        scheduler = VideoScheduler()
+
+        # Get existing scheduled videos from YouTube
+        console.print("[cyan]Checking existing scheduled videos on YouTube...[/cyan]")
+        existing_videos = youtube.get_scheduled_videos()
+        console.print(f"Found {len(existing_videos)} already scheduled videos\n")
+
+        # Calculate schedule for new videos
+        publish_times = []
+        for i, video in enumerate(video_data):
+            # Calculate next available slot based on existing schedule + already calculated
+            all_scheduled = existing_videos + [{"publishAt": pt.strftime("%Y-%m-%dT%H:%M:%S.000Z")} for pt in publish_times]
+            next_slot = scheduler.calculate_next_available_slot(all_scheduled)
+            publish_times.append(next_slot)
+
+        # Display schedule
+        table = Table(title="Scheduled Videos" + (" (DRY RUN)" if dry_run else ""))
+        table.add_column("Video", style="cyan")
+        table.add_column("Video ID", style="yellow")
+        table.add_column("Publish Time (Local)", style="green")
+        table.add_column("Publish Time (UTC)", style="blue")
+
+        for video, publish_time in zip(video_data, publish_times):
+            publish_local = publish_time.astimezone(scheduler.timezone)
+            table.add_row(
+                video["filename"],
+                video["video_id"],
+                publish_local.strftime("%Y-%m-%d %H:%M"),
+                publish_time.strftime("%Y-%m-%d %H:%M"),
+            )
+
+        console.print(table)
+        console.print()
+
+        if dry_run:
+            console.print("[yellow]🔍 Dry run mode - no videos will be updated[/yellow]\n")
+            return
+
+        # Update videos with metadata and schedule
+        console.print("[bold cyan]Updating videos with metadata and schedule...[/bold cyan]\n")
+
+        updated_count = 0
+        failed_count = 0
+
+        for video, publish_time in zip(video_data, publish_times):
+            filename = video["filename"]
+            video_id = video["video_id"]
+
+            console.print(f"[cyan]Scheduling {filename} ({video_id})...[/cyan]")
+
+            try:
+                # Load metadata if exists
+                metadata_file = filename.replace(".mp4", "_metadata.json")
+                metadata_path = output_dir / metadata_file
+
+                if metadata_path.exists():
+                    with open(metadata_path, encoding="utf-8") as f:
+                        metadata = json.load(f)
+                        title = metadata.get("title", "Untitled Video")
+                        description = metadata.get("description", "")
+                        tags = metadata.get("tags", [])
+                        category_id = metadata.get("category_id", settings.youtube_category_id)
+                else:
+                    # Use defaults
+                    logger.warning(f"No metadata found for {filename}, using defaults")
+                    title = f"Video {video_id}"
+                    description = "Motivational content. #motivation #shorts"
+                    tags = ["motivation", "shorts"]
+                    category_id = settings.youtube_category_id
+
+                # Update video with schedule
+                youtube.update_video_schedule(
+                    video_id=video_id,
+                    title=title,
+                    description=description,
+                    tags=tags,
+                    category_id=category_id,
+                    publish_at=publish_time,
+                )
+
+                publish_local = publish_time.astimezone(scheduler.timezone)
+                console.print(f"[green]✓ Scheduled for {publish_local.strftime('%Y-%m-%d %H:%M')}[/green]\n")
+                updated_count += 1
+
+            except Exception as e:
+                logger.exception(f"Failed to schedule {filename}")
+                console.print(f"[red]✗ Failed: {e}[/red]\n")
+                failed_count += 1
+
+        # Summary
+        console.print("[bold cyan]Schedule Summary:[/bold cyan]")
+        console.print(f"  ✓ Scheduled: {updated_count}")
+        console.print(f"  ✗ Failed: {failed_count}\n")
+
+        if updated_count > 0:
+            console.print("[bold green]Done![/bold green]")
+            console.print("Check YouTube Studio to verify scheduled videos.\n")
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Calculate schedule but don't upload (preview only)",

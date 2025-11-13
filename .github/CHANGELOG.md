@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-11-13
+
+### Added
+- **2-Phase Upload/Schedule System** - Separate upload and scheduling for better resilience
+  - **Phase 1 (batch-upload)**: Upload videos as private with temporary metadata
+    - Saves video IDs to CSV for later scheduling
+    - Supports limit flag (default: 20 videos/day for API quota)
+    - Automatic retry with tenacity
+  - **Phase 2 (batch-schedule)**: Update videos with final metadata and schedule publish times
+    - Reads video IDs from CSV and metadata from JSON files
+    - Intelligent "fill gaps" scheduling logic
+    - Dry-run mode for preview before execution
+- **Smart Schedule Gap Filling** - Automatically fills gaps in existing schedule
+  - Queries YouTube API for already scheduled videos
+  - Calculates next available slot based on existing schedule
+  - Fills gaps in current day before moving to next day
+  - Handles edge cases (today full, gaps between days, no scheduled videos)
+- **New YouTube API Methods** - Extended YouTubeService
+  - `upload_video_as_private()` - Upload with temporary metadata
+  - `get_scheduled_videos()` - Query scheduled videos from channel
+  - `update_video_schedule()` - Update video with final metadata and publishAt
+- **New CLI Commands**
+  - `batch-upload` - Phase 1: Upload videos as private
+  - `batch-schedule` - Phase 2: Schedule with final metadata
+  - Both commands support dry-run and verbose modes
+- **Enhanced Scheduler** - VideoScheduler improvements
+  - `calculate_next_available_slot()` - Smart gap-filling logic
+  - RFC 3339 datetime parsing for YouTube API responses
+  - Timezone-aware scheduling with configurable timezone
+- **Comprehensive Documentation** - TWO_PHASE_UPLOAD.md
+  - Complete guide for 2-phase system
+  - Examples for all use cases
+  - Troubleshooting section
+  - Comparison with old system
+
+### Changed
+- **YouTube Scopes** - Added youtube.readonly scope for querying scheduled videos
+- **Scheduler Logic** - Now supports calculating slots based on existing videos
+- **CSV Output** - video_ids.csv format for tracking uploaded videos
+
+### Benefits
+- **Resilience**: Separate phases allow retry without re-uploading
+- **Flexibility**: Upload now, schedule later
+- **Smart Scheduling**: Automatically fills gaps in existing schedule
+- **API Efficient**: Respects YouTube API daily quota (20 videos/day)
+- **Error Recovery**: Each phase can be retried independently
+
+### Migration from Old System
+
+Old system (1-phase):
+```bash
+python -m src.main schedule-uploads
+```
+
+New system (2-phase):
+```bash
+# Phase 1: Upload
+python -m src.main batch-upload
+
+# Phase 2: Schedule
+python -m src.main batch-schedule
+```
+
+**Note**: Old `schedule-uploads` command still available for backward compatibility.
+
 ## [0.2.2] - 2025-01-07
 
 ### Added

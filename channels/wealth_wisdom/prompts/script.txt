@@ -50,3 +50,30 @@ Title: {title}
 Content: {content}
 
 Generate a script with 3-8 scenes that teaches this concept in a confident, actionable way.
+
+## Output Format:
+
+Return your response as a JSON object with this EXACT structure:
+
+{{
+  "title": "Catchy video title (under 60 characters)",
+  "description": "Video description (2-3 sentences)",
+  "scenes": [
+    {{
+      "text": "Scene 1 narration text (10-20 words, direct and punchy)",
+      "image_prompt": "Detailed image prompt for luxury finance aesthetic"
+    }},
+    {{
+      "text": "Scene 2 narration text",
+      "image_prompt": "Detailed image prompt"
+    }}
+  ]
+}}
+
+CRITICAL REQUIREMENTS:
+- Return ONLY valid JSON, no other text before or after
+- Do NOT use markdown code blocks (no ```)
+- Each scene text: 10-20 words maximum
+- Include 3-8 scenes total
+- Image prompts should describe luxury finance visuals (yachts, trading floors, crypto, watches, penthouses)
+- Use the humble brag tone throughout

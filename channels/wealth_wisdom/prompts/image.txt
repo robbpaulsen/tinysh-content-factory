@@ -25,7 +25,9 @@ You are creating cinematic images for a luxury finance and trading YouTube chann
 - Clean, uncluttered composition
 
 ## What to AVOID:
-- Cartoon or illustrated style
+- illustrated style
+- Cartoon
+- Cartoons
 - Overly busy or cluttered scenes
 - Low quality stock photo look
 - Cheesy or tacky wealth imagery

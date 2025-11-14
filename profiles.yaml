@@ -8,9 +8,9 @@ profiles:
     voice:
       engine: chatterbox
       sample_path: "D:/Music/voces/brody/sample.mp3"
-      temperature: 0.6  # More controlled
-      cfg_weight: 0.70  # Higher accuracy
-      exaggeration: 0.40  # Less dramatic
+      temperature: 0.6 # More controlled
+      cfg_weight: 0.70 # Higher accuracy
+      exaggeration: 0.40 # Less dramatic
     music:
       playlist:
         - path: "D:/Music/finance/corporate_smooth.mp3"
@@ -19,7 +19,7 @@ profiles:
           name: "Professional Upbeat"
         - path: "D:/Music/finance/success_theme.mp3"
           name: "Success Theme"
-      volume: 0.08  # Lower volume for professional feel
+      volume: 0.08 # Lower volume for professional feel
       rotation: sequential
 
   denzel_authority:
@@ -46,16 +46,16 @@ profiles:
     voice:
       engine: chatterbox
       sample_path: "D:/Music/voces/frank/Frank-Louis_pvc_sp105_s30_sb85_se50_b_m2.mp3"
-      temperature: 0.75
+      temperature: 0.7
       cfg_weight: 0.65
-      exaggeration: 0.55
+      exaggeration: 0.6
     music:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
           name: "Billionaire Power Theme"
         - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
           name: "Billions Power Theme"
-      volume: 0.1
+      volume: 0.2
       rotation: random
 
   kokoro_neutral:

@@ -44,7 +44,7 @@ scenes:
 # Image generation (FLUX)
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
-  style: "modern professional, almost dandy, sleek design, financial charts, yachts, stock trading symbols, crypto trading ambient, green and gold tones, corporate aesthetic, minimalist"
+  style: "Create a cinematic image in a dramatic, high-contrast photographic style, with a cool blue color grading, subtly accented with elegant green and gold tones. The subject is a figure [doing something that subtly implies financial wisdom or success, such as contemplatively observing a complex financial chart projected onto a minimalist background, standing on a yacht deck overlooking a city skyline, or calmly overseeing multiple stock trading screens], captured from a distance. The foreground should be softly blurred, perhaps hinting at a sleek office interior or blurred financial data, to focus attention on the figure and the sophisticated financial landscape details. The overall visual should convey strength, wisdom, and a sense of calm determination, reflecting a modern professional, almost dandy aesthetic. The mood should feel inspirational and dignified, resembling a powerful financial documentary scene that speaks to astute investment and strategic growth."
 
 # YouTube upload settings
 youtube:

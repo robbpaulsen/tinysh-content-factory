@@ -31,10 +31,30 @@ def async_retry(func):
 class LLMService:
     """Service for generating content using Google Gemini."""
 
-    def __init__(self):
-        """Initialize Gemini API client."""
+    def __init__(self, channel_config: "ChannelConfig | None" = None):
+        """
+        Initialize Gemini API client.
+
+        Args:
+            channel_config: Optional channel configuration for custom prompts
+        """
         genai.configure(api_key=settings.google_api_key)
         self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.channel_config = channel_config
+
+        # Load custom prompts if channel config provided
+        self.custom_script_prompt = None
+        self.custom_image_prompt = None
+
+        if self.channel_config:
+            self.custom_script_prompt = self.channel_config.get_prompt('script')
+            self.custom_image_prompt = self.channel_config.get_prompt('image')
+
+            if self.custom_script_prompt:
+                logger.info(f"✓ Loaded custom SCRIPT prompt for {self.channel_config.config.name}")
+            if self.custom_image_prompt:
+                logger.info(f"✓ Loaded custom IMAGE prompt for {self.channel_config.config.name}")
+
         logger.info("Initialized Gemini LLM service")
 
     @staticmethod
@@ -130,12 +150,18 @@ Generate only the motivational speech text, nothing else."""
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True,
     )
-    def _generate_video_script_sync(self, motivational_text: str, art_style: str) -> VideoScript:
+    def _generate_video_script_sync(self, motivational_text: str, art_style: str, story_title: str = "", story_content: str = "") -> VideoScript:
         """Synchronous version of script generation (for thread pool)."""
         logger.info("Creating video script with scenes and image prompts")
         log_api_call("Gemini", "generate_video_script", "starting", logger=logger)
 
-        prompt = f"""You are a video script creator for YouTube Shorts (15-45 seconds). Given a motivational speech, break it into 5-8 scenes.
+        # Use custom script prompt if available
+        if self.custom_script_prompt:
+            logger.info("Using CUSTOM script prompt from channel")
+            prompt = self.custom_script_prompt.format(title=story_title, content=story_content)
+        else:
+            logger.info("Using DEFAULT script prompt")
+            prompt = f"""You are a video script creator for YouTube Shorts (15-45 seconds). Given a motivational speech, break it into 5-8 scenes.
 
 Motivational Speech:
 {motivational_text}
@@ -220,7 +246,7 @@ IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
             raise
 
     async def create_video_script(
-        self, motivational_text: str, art_style: str | None = None
+        self, motivational_text: str, art_style: str | None = None, story_title: str = "", story_content: str = ""
     ) -> VideoScript:
         """
         Create a structured video script with scenes and image prompts.
@@ -228,6 +254,8 @@ IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
         Args:
             motivational_text: The motivational speech text
             art_style: Art style description (defaults to settings.art_style)
+            story_title: Original story title (for custom prompts)
+            story_content: Original story content (for custom prompts)
 
         Returns:
             VideoScript with scenes and metadata
@@ -236,7 +264,7 @@ IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
         # Run in thread pool to not block event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
-            None, self._generate_video_script_sync, motivational_text, art_style
+            None, self._generate_video_script_sync, motivational_text, art_style, story_title, story_content
         )
 
     async def create_complete_workflow(
@@ -254,11 +282,15 @@ IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
         """
         logger.info("Starting complete LLM workflow")
 
-        # Step 1: Create motivational speech
-        speech = await self.create_motivational_speech(story_title, story_content)
+        # Step 1: Create motivational speech (skip if using custom script prompt)
+        if self.custom_script_prompt:
+            logger.info("Using custom script prompt - skipping motivational speech generation")
+            speech = ""  # Not used when custom prompt exists
+        else:
+            speech = await self.create_motivational_speech(story_title, story_content)
 
-        # Step 2: Create video script
-        script = await self.create_video_script(speech)
+        # Step 2: Create video script (pass story info for custom prompts)
+        script = await self.create_video_script(speech, story_title=story_title, story_content=story_content)
 
         logger.info("Complete LLM workflow finished")
         return script

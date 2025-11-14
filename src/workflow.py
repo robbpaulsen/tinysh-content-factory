@@ -83,7 +83,7 @@ class WorkflowOrchestrator:
                 logger.info(f"Using Google Sheets tab: {sheet_tab}")
 
         self.sheets = GoogleSheetsService(sheet_name=sheet_tab)
-        self.llm = LLMService()
+        self.llm = LLMService(channel_config=self.channel_config)
         self.media = MediaService()
 
         # Initialize YouTube with channel-specific credentials if available

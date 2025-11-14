@@ -1,12 +1,9 @@
+# Core dependencies
 uuid
 numpy
-kokoro
 soundfile
 fastapi[standard]
 loguru
-chatterbox-tts >= 0.1.2
-faster_whisper
-torchaudio
 requests_tor
 requests[socks]
 youtube-transcript-api
@@ -14,3 +11,14 @@ matplotlib
 Pillow
 nltk
 imageio
+
+# PyTorch stack - MUST be installed first with compatible versions
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+transformers==4.36.2
+
+# TTS engines (require PyTorch above)
+kokoro
+chatterbox-tts >= 0.1.2
+faster_whisper

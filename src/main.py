@@ -118,6 +118,11 @@ def update_stories(subreddit: str | None, limit: int):
 
 @cli.command()
 @click.option(
+    "--channel",
+    default=None,
+    help="Channel name to use (default: first available channel)",
+)
+@click.option(
     "--count",
     "-c",
     default=1,
@@ -133,13 +138,34 @@ def update_stories(subreddit: str | None, limit: int):
     "--profile",
     "-p",
     default=None,
-    help="Voice/music profile to use (default: from profiles.yaml)",
+    help="Voice/music profile to use (default: from channel config)",
 )
-def generate(count: int, update: bool, profile: str | None):
+def generate(channel: str | None, count: int, update: bool, profile: str | None):
     """Generate videos from stories in Google Sheets."""
+    from src.channel_config import ChannelConfig
 
     async def run():
-        orchestrator = WorkflowOrchestrator(profile=profile)
+        # Load channel config
+        if not channel:
+            channels = ChannelConfig.list_available_channels()
+            if not channels:
+                console.print("[red]✗ No channels found. Run 'list-channels' first.[/red]")
+                return
+            channel_name = channels[0]
+            console.print(f"[yellow]No channel specified, using: {channel_name}[/yellow]")
+        else:
+            channel_name = channel
+
+        try:
+            channel_config = ChannelConfig(channel_name)
+        except Exception as e:
+            console.print(f"[red]✗ Failed to load channel '{channel_name}': {e}[/red]")
+            return
+
+        orchestrator = WorkflowOrchestrator(
+            channel_config=channel_config,
+            profile=profile
+        )
         try:
             await orchestrator.run_complete_workflow(
                 update_stories=update,
@@ -277,17 +303,22 @@ def init():
 
 @cli.command()
 @click.option(
+    "--channel",
+    default=None,
+    help="Channel name to use (default: first available channel)",
+)
+@click.option(
     "--limit",
     "-l",
     default=20,
     type=int,
     help="Maximum number of videos to upload (default: 20, YouTube API daily limit)",
 )
-def batch_upload(limit: int):
+def batch_upload(channel: str | None, limit: int):
     """
     Phase 1: Upload videos to YouTube as PRIVATE with temporary metadata.
 
-    Uploads all video files in output/ directory to YouTube as private videos
+    Uploads all video files in channel's output/ directory to YouTube as private videos
     with temporary metadata. Video IDs are saved to output/video_ids.csv for
     later scheduling.
 
@@ -295,27 +326,45 @@ def batch_upload(limit: int):
     After uploading, use 'batch-schedule' to set final metadata and publish times.
 
     Examples:
-        # Upload all videos (max 20 per day)
-        python -m src.main batch-upload
+        # Upload all videos for a channel (max 20 per day)
+        python -m src.main batch-upload --channel momentum_mindset
 
         # Upload only 5 videos
-        python -m src.main batch-upload --limit 5
+        python -m src.main batch-upload --channel wealth_wisdom --limit 5
     """
     import csv
+    from src.channel_config import ChannelConfig
     from src.services.youtube import YouTubeService
 
     async def run():
-        console.print("\n[bold cyan]📤 Phase 1: Batch Upload (Private)[/bold cyan]\n")
+        # Load channel config
+        if not channel:
+            channels = ChannelConfig.list_available_channels()
+            if not channels:
+                console.print("[red]✗ No channels found. Run 'list-channels' first.[/red]")
+                return
+            channel_name = channels[0]
+            console.print(f"[yellow]No channel specified, using: {channel_name}[/yellow]")
+        else:
+            channel_name = channel
 
-        output_dir = Path("./output")
+        try:
+            channel_config = ChannelConfig(channel_name)
+        except Exception as e:
+            console.print(f"[red]✗ Failed to load channel '{channel_name}': {e}[/red]")
+            return
+
+        console.print(f"\n[bold cyan]📤 Phase 1: Batch Upload (Private) - {channel_config.config.name}[/bold cyan]\n")
+
+        output_dir = channel_config.output_dir
         if not output_dir.exists():
-            console.print("[red]✗ Output directory not found[/red]")
+            console.print(f"[red]✗ Output directory not found: {output_dir}[/red]")
             return
 
         # Find all video files
         video_files = sorted(output_dir.glob("video_*.mp4"))
         if not video_files:
-            console.print("[yellow]⚠ No videos found in output/[/yellow]")
+            console.print(f"[yellow]⚠ No videos found in {output_dir}/[/yellow]")
             return
 
         # Limit to avoid API quota issues
@@ -325,8 +374,8 @@ def batch_upload(limit: int):
 
         console.print(f"Found {len(video_files)} videos to upload\n")
 
-        # Initialize YouTube service
-        youtube = YouTubeService()
+        # Initialize YouTube service with channel credentials
+        youtube = YouTubeService(credentials_path=channel_config.credentials_path)
 
         # Upload videos and collect video IDs
         uploaded_videos = []
@@ -365,7 +414,7 @@ def batch_upload(limit: int):
 
         if uploaded_videos:
             console.print("\n[bold green]Next step:[/bold green]")
-            console.print("  Run: python -m src.main batch-schedule")
+            console.print(f"  Run: python -m src.main batch-schedule --channel {channel_name}")
             console.print("  This will set final metadata and schedule publish times.\n")
 
     asyncio.run(run())
@@ -373,11 +422,16 @@ def batch_upload(limit: int):
 
 @cli.command()
 @click.option(
+    "--channel",
+    default=None,
+    help="Channel name to use (default: first available channel)",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Preview schedule without updating videos",
 )
-def batch_schedule(dry_run: bool):
+def batch_schedule(channel: str | None, dry_run: bool):
     """
     Phase 2: Schedule uploaded videos with final metadata and publish times.
 
@@ -390,31 +444,48 @@ def batch_schedule(dry_run: bool):
 
     The scheduler will:
     - Check for existing scheduled videos on YouTube
-    - Fill gaps in the schedule (6 AM - 4 PM, every 2 hours)
-    - If today is full, start tomorrow at 6 AM
+    - Fill gaps in the schedule based on channel config
     - Update videos with SEO-optimized metadata
 
     Examples:
         # Preview schedule
-        python -m src.main batch-schedule --dry-run
+        python -m src.main batch-schedule --channel momentum_mindset --dry-run
 
         # Schedule videos
-        python -m src.main batch-schedule
+        python -m src.main batch-schedule --channel wealth_wisdom
     """
     import csv
     import json
+    from src.channel_config import ChannelConfig
     from src.services.youtube import YouTubeService
     from src.services.scheduler import VideoScheduler
     from rich.table import Table
 
     async def run():
-        console.print("\n[bold cyan]📅 Phase 2: Batch Schedule[/bold cyan]\n")
+        # Load channel config
+        if not channel:
+            channels = ChannelConfig.list_available_channels()
+            if not channels:
+                console.print("[red]✗ No channels found. Run 'list-channels' first.[/red]")
+                return
+            channel_name = channels[0]
+            console.print(f"[yellow]No channel specified, using: {channel_name}[/yellow]")
+        else:
+            channel_name = channel
 
-        output_dir = Path("./output")
+        try:
+            channel_config = ChannelConfig(channel_name)
+        except Exception as e:
+            console.print(f"[red]✗ Failed to load channel '{channel_name}': {e}[/red]")
+            return
+
+        console.print(f"\n[bold cyan]📅 Phase 2: Batch Schedule - {channel_config.config.name}[/bold cyan]\n")
+
+        output_dir = channel_config.output_dir
         csv_path = output_dir / "video_ids.csv"
 
         if not csv_path.exists():
-            console.print("[red]✗ video_ids.csv not found[/red]")
+            console.print(f"[red]✗ video_ids.csv not found in {output_dir}[/red]")
             console.print("[yellow]Run 'batch-upload' first to upload videos[/yellow]")
             return
 
@@ -430,9 +501,13 @@ def batch_schedule(dry_run: bool):
 
         console.print(f"Found {len(video_data)} uploaded videos\n")
 
-        # Initialize services
-        youtube = YouTubeService()
-        scheduler = VideoScheduler()
+        # Initialize services with channel config
+        youtube = YouTubeService(credentials_path=channel_config.credentials_path)
+        scheduler = VideoScheduler(
+            start_hour=channel_config.config.youtube.schedule.start_hour,
+            end_hour=channel_config.config.youtube.schedule.end_hour,
+            interval_hours=channel_config.config.youtube.schedule.interval_hours,
+        )
 
         # Get existing scheduled videos from YouTube
         console.print("[cyan]Checking existing scheduled videos on YouTube...[/cyan]")
@@ -493,14 +568,14 @@ def batch_schedule(dry_run: bool):
                         title = metadata.get("title", "Untitled Video")
                         description = metadata.get("description", "")
                         tags = metadata.get("tags", [])
-                        category_id = metadata.get("category_id", settings.youtube_category_id)
+                        category_id = metadata.get("category_id", channel_config.config.youtube.category_id)
                 else:
-                    # Use defaults
+                    # Use defaults from channel config
                     logger.warning(f"No metadata found for {filename}, using defaults")
-                    title = f"Video {video_id}"
-                    description = "Motivational content. #motivation #shorts"
-                    tags = ["motivation", "shorts"]
-                    category_id = settings.youtube_category_id
+                    title = f"{channel_config.config.name} Video"
+                    description = f"{channel_config.config.description} #shorts"
+                    tags = ["shorts"]
+                    category_id = channel_config.config.youtube.category_id
 
                 # Update video with schedule
                 youtube.update_video_schedule(
@@ -598,6 +673,127 @@ def schedule_uploads(dry_run: bool, start_date: str | None):
 
         finally:
             await orchestrator.close()
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.option(
+    "--count",
+    "-c",
+    default=1,
+    type=int,
+    help="Number of videos to generate per AI channel",
+)
+@click.option(
+    "--update/--no-update",
+    default=False,
+    help="Update stories from Reddit first (for AI channels)",
+)
+def batch_all(count: int, update: bool):
+    """
+    Process all channels in sequence: generate videos for each channel.
+
+    This command processes each channel according to its type:
+    - AI-generated channels: Generate videos from Reddit stories
+    - Compilation channels: Download and compile YouTube clips
+
+    Examples:
+        # Generate 3 videos for each AI channel
+        python -m src.main batch-all --count 3
+
+        # Generate videos and update Reddit stories first
+        python -m src.main batch-all --count 5 --update
+    """
+    from src.channel_config import ChannelConfig
+
+    async def run():
+        console.print("\n[bold magenta]🚀 Batch Processing All Channels[/bold magenta]\n")
+
+        channels = ChannelConfig.list_available_channels()
+        if not channels:
+            console.print("[red]✗ No channels found[/red]")
+            return
+
+        console.print(f"Found {len(channels)} channels to process\n")
+
+        results = []
+
+        for i, channel_name in enumerate(channels, 1):
+            console.print(f"\n[bold cyan]═══ Channel {i}/{len(channels)}: {channel_name} ═══[/bold cyan]\n")
+
+            try:
+                channel_config = ChannelConfig(channel_name)
+                channel_type = channel_config.config.channel_type
+
+                if channel_type == "youtube_compilation":
+                    # Process compilation channel
+                    console.print(f"[yellow]Channel type: YouTube Compilation[/yellow]")
+                    console.print("[yellow]⚠ Compilation channels not yet implemented in batch-all[/yellow]")
+                    console.print("[cyan]Use manual workflow for now[/cyan]\n")
+                    results.append((channel_name, "skipped", "compilation not implemented"))
+
+                elif channel_type in ["ai_generated_shorts", "ai_generated_videos"]:
+                    # Process AI-generated channel
+                    console.print(f"[green]Channel type: {channel_type.replace('_', ' ').title()}[/green]")
+
+                    orchestrator = WorkflowOrchestrator(
+                        channel_config=channel_config,
+                        profile=None,  # Use channel default
+                    )
+
+                    try:
+                        await orchestrator.run_complete_workflow(
+                            update_stories=update,
+                            process_count=count,
+                        )
+                        results.append((channel_name, "success", f"{count} videos generated"))
+                    except Exception as e:
+                        logger.exception(f"Failed to process channel {channel_name}")
+                        console.print(f"[red]✗ Error processing {channel_name}: {e}[/red]\n")
+                        results.append((channel_name, "failed", str(e)))
+                    finally:
+                        await orchestrator.close()
+
+                else:
+                    console.print(f"[yellow]⚠ Unknown channel type: {channel_type}[/yellow]\n")
+                    results.append((channel_name, "skipped", f"unknown type: {channel_type}"))
+
+            except Exception as e:
+                logger.exception(f"Failed to load channel {channel_name}")
+                console.print(f"[red]✗ Failed to load {channel_name}: {e}[/red]\n")
+                results.append((channel_name, "failed", f"load error: {e}"))
+
+        # Summary
+        console.print("\n[bold magenta]═══════════════════════════════════════════════[/bold magenta]")
+        console.print("[bold cyan]Batch Processing Summary[/bold cyan]\n")
+
+        from rich.table import Table
+        table = Table()
+        table.add_column("Channel", style="cyan")
+        table.add_column("Status", style="yellow")
+        table.add_column("Details", style="white")
+
+        for channel_name, status, details in results:
+            status_style = {
+                "success": "[green]✓ Success[/green]",
+                "failed": "[red]✗ Failed[/red]",
+                "skipped": "[yellow]⊘ Skipped[/yellow]",
+            }.get(status, status)
+
+            table.add_row(channel_name, status_style, details)
+
+        console.print(table)
+        console.print()
+
+        # Count stats
+        success_count = sum(1 for _, status, _ in results if status == "success")
+        failed_count = sum(1 for _, status, _ in results if status == "failed")
+        skipped_count = sum(1 for _, status, _ in results if status == "skipped")
+
+        console.print(f"[green]✓ Successful: {success_count}[/green]")
+        console.print(f"[red]✗ Failed: {failed_count}[/red]")
+        console.print(f"[yellow]⊘ Skipped: {skipped_count}[/yellow]\n")
 
     asyncio.run(run())
 

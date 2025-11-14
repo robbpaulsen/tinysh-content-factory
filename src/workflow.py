@@ -29,28 +29,61 @@ console = Console()
 class WorkflowOrchestrator:
     """Orchestrates the complete YouTube Shorts generation workflow."""
 
-    def __init__(self, profile: str | None = None):
+    def __init__(
+        self,
+        channel_config: "ChannelConfig | None" = None,
+        profile: str | None = None
+    ):
         """
         Initialize all services.
 
         Args:
-            profile: Voice/music profile ID (uses default from profiles.yaml if None)
+            channel_config: Channel configuration (optional, uses default if None)
+            profile: Voice/music profile ID (uses default from channel/profiles.yaml if None)
         """
+        from src.channel_config import ChannelConfig
+
         logger.info("Initializing workflow orchestrator")
 
-        # Initialize profile manager
-        self.profile_manager = ProfileManager(settings.profiles_path)
-        self.active_profile = profile or settings.active_profile
+        # Set channel config
+        self.channel_config = channel_config
+        if self.channel_config:
+            logger.info(f"Using channel: {self.channel_config.config.name}")
+
+        # Initialize profile manager (from channel or global profiles.yaml)
+        if self.channel_config:
+            profiles_path = self.channel_config.channel_dir / "profiles.yaml"
+            if not profiles_path.exists():
+                profiles_path = settings.profiles_path
+        else:
+            profiles_path = settings.profiles_path
+
+        self.profile_manager = ProfileManager(profiles_path)
+
+        # Use profile from: 1) CLI arg, 2) channel config, 3) profiles.yaml default
+        if profile:
+            self.active_profile = profile
+        elif self.channel_config and self.channel_config.config.default_profile:
+            self.active_profile = self.channel_config.config.default_profile
+        else:
+            self.active_profile = settings.active_profile
 
         # Log which profile is being used
         selected_profile = self.profile_manager.get_profile(self.active_profile)
         logger.info(f"Using profile: {selected_profile.name}")
 
+        # Initialize services
         self.reddit = RedditService()
         self.sheets = GoogleSheetsService()
         self.llm = LLMService()
         self.media = MediaService()
-        self.youtube = YouTubeService()
+
+        # Initialize YouTube with channel-specific credentials if available
+        if self.channel_config:
+            self.youtube = YouTubeService(credentials_path=self.channel_config.credentials_path)
+        else:
+            self.youtube = YouTubeService()
+
         self.seo_optimizer = SEOOptimizerService() if settings.seo_enabled else None
 
     async def close(self):
@@ -64,13 +97,18 @@ class WorkflowOrchestrator:
         Download stories from Reddit and save to Google Sheets.
 
         Args:
-            subreddit: Subreddit name (defaults to settings.subreddit)
+            subreddit: Subreddit name (defaults to channel config or settings.subreddit)
             limit: Number of stories to fetch
 
         Returns:
             Number of stories saved
         """
         console.print(f"\n[bold cyan]📥 Fetching stories from Reddit...[/bold cyan]")
+
+        # Use subreddit from: 1) explicit arg, 2) channel config, 3) settings
+        if not subreddit:
+            if self.channel_config and hasattr(self.channel_config.config.content, 'subreddit'):
+                subreddit = self.channel_config.config.content.subreddit
 
         # Fetch stories
         posts = self.reddit.get_top_stories(
@@ -319,7 +357,11 @@ class WorkflowOrchestrator:
                 final_video_id, script = await self.generate_video_from_story(story)
 
                 # Download video locally (YouTube upload disabled)
-                output_dir = Path("./output")
+                # Use channel output dir if available, otherwise use default
+                if self.channel_config:
+                    output_dir = self.channel_config.output_dir
+                else:
+                    output_dir = Path("./output")
                 output_dir.mkdir(parents=True, exist_ok=True)
                 # file_id already includes .mp4 extension
                 video_path = output_dir / final_video_id
@@ -381,7 +423,11 @@ class WorkflowOrchestrator:
             final_video_id, script = await self.generate_video_from_story(story)
 
             # Download video locally (YouTube upload disabled)
-            output_dir = Path("./output")
+            # Use channel output dir if available, otherwise use default
+            if self.channel_config:
+                output_dir = self.channel_config.output_dir
+            else:
+                output_dir = Path("./output")
             output_dir.mkdir(parents=True, exist_ok=True)
             # file_id already includes .mp4 extension
             video_path = output_dir / final_video_id

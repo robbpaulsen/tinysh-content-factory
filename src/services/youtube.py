@@ -25,25 +25,36 @@ SCOPES = [
 class YouTubeService:
     """Service for uploading videos to YouTube."""
 
-    def __init__(self, credentials_path: Path | None = None):
+    def __init__(self, credentials_path: Path | None = None, token_path: Path | None = None):
         """
         Initialize YouTube service.
 
         Args:
             credentials_path: Path to OAuth credentials JSON
+            token_path: Path to save/load token (default: token_youtube.json in same dir as credentials)
         """
         self.credentials_path = credentials_path or settings.google_credentials_path
+
+        # Determine token path: same directory as credentials, or custom path
+        if token_path:
+            self.token_path = token_path
+        elif credentials_path:
+            # Save token next to credentials file
+            self.token_path = credentials_path.parent / "token_youtube.json"
+        else:
+            # Default: root directory
+            self.token_path = Path("token_youtube.json")
+
         self.service = None
         self._authenticate()
 
     def _authenticate(self):
         """Authenticate with YouTube API."""
         creds = None
-        token_path = Path("token_youtube.json")
 
         # Load existing token
-        if token_path.exists():
-            creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        if self.token_path.exists():
+            creds = Credentials.from_authorized_user_file(str(self.token_path), SCOPES)
 
         # Refresh or get new credentials
         if not creds or not creds.valid:
@@ -51,15 +62,17 @@ class YouTubeService:
                 logger.info("Refreshing YouTube credentials")
                 creds.refresh(Request())
             else:
-                logger.info("Starting OAuth flow for YouTube")
+                logger.info(f"Starting OAuth flow for YouTube (credentials: {self.credentials_path})")
                 flow = InstalledAppFlow.from_client_secrets_file(
                     str(self.credentials_path), SCOPES
                 )
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for next run
-            with open(token_path, "w") as token:
+            self.token_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.token_path, "w") as token:
                 token.write(creds.to_json())
+            logger.info(f"Token saved to: {self.token_path}")
 
         self.service = build("youtube", "v3", credentials=creds)
         logger.info("YouTube authentication successful")

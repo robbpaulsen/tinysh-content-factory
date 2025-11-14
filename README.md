@@ -2,6 +2,8 @@
 
 Automated YouTube Shorts generation from Reddit stories using AI. Transform stories into engaging videos with generated images, voiceovers, captions, and background music.
 
+**Now with Multi-Channel Support!** Manage multiple YouTube channels from a single application with independent configurations, profiles, and credentials.
+
 ## Features
 
 - 🤖 **AI-Powered Content**: Uses Google Gemini to create motivational speeches from Reddit stories
@@ -9,7 +11,9 @@ Automated YouTube Shorts generation from Reddit stories using AI. Transform stor
 - 🗣️ **Text-to-Speech**: Local TTS using Kokoro or Chatterbox with voice cloning
 - 🎬 **Video Processing**: Automatic captioning, merging, and background music
 - 📊 **Google Sheets Integration**: Store and manage stories
-- 📤 **YouTube Upload**: Automatic upload with metadata
+- 📤 **YouTube Upload**: 2-phase upload/schedule system with smart gap filling
+- 📺 **Multi-Channel System**: Manage 3+ YouTube channels independently
+- 🎯 **Channel Types**: AI-generated shorts, AI-generated videos, YouTube compilations
 - 🔄 **Complete Pipeline**: Reddit → AI → Video → YouTube
 
 ## Architecture
@@ -100,6 +104,205 @@ nano .env  # or use your preferred editor
 - **Gemini**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - **Together.ai**: Sign up at [Together.ai](https://together.ai/)
 
+## Multi-Channel System
+
+The system supports managing **multiple YouTube channels** from a single application. Each channel has independent configuration, credentials, output directory, and scheduling.
+
+### Channel Structure
+
+```
+channels/
+├── momentum_mindset/           # Channel 1: Motivational shorts
+│   ├── channel.yaml           # Channel configuration
+│   ├── profiles.yaml          # Voice/music profiles (optional)
+│   ├── credentials.json       # YouTube OAuth credentials
+│   ├── token_youtube.json     # OAuth token (auto-generated)
+│   ├── assets/                # Channel-specific assets
+│   └── output/                # Generated videos
+│       ├── video_001.mp4
+│       ├── video_001_metadata.json
+│       └── video_ids.csv
+│
+├── wealth_wisdom/             # Channel 2: Finance shorts
+│   └── ...
+│
+└── finance_wins/              # Channel 3: Finance compilations
+    └── ...
+```
+
+### Channel Types
+
+1. **`ai_generated_shorts`** - AI-generated short videos (9:16 aspect ratio)
+   - Reddit → Gemini → FLUX → TTS → FFmpeg
+   - Perfect for motivational, educational, story content
+   - 15-60 seconds duration
+
+2. **`ai_generated_videos`** - AI-generated longer videos (16:9 aspect ratio)
+   - Same pipeline as shorts but longer format
+   - 3-10 minutes duration
+   - More detailed content
+
+3. **`youtube_compilation`** - Compilation videos from YouTube clips
+   - Downloads clips using yt-dlp
+   - Compiles with FFmpeg
+   - Perfect for curated content, compilations
+   - Zero AI generation costs
+
+### Channel Configuration Example
+
+Each channel has a `channel.yaml` file:
+
+```yaml
+name: "Momentum Mindset"
+description: "Daily motivation and self-improvement"
+handle: "@MomentumMindset"
+channel_type: "ai_generated_shorts"
+
+content:
+  format: "shorts"
+  duration_range: [15, 45]
+  subreddit: "selfimprovement"
+  topics:
+    - self improvement
+    - motivation
+    - productivity
+
+video:
+  aspect_ratio: "9:16"
+  width: 768
+  height: 1344
+
+youtube:
+  category_id: "22"  # People & Blogs
+  schedule:
+    videos_per_day: 6
+    start_hour: 6     # 6 AM
+    end_hour: 16      # 4 PM
+    interval_hours: 2 # Every 2 hours
+
+seo:
+  target_keywords:
+    - motivation
+    - self improvement
+  default_tags:
+    - shorts
+    - motivation
+
+default_profile: "frank_motivational"
+```
+
+### List Available Channels
+
+```bash
+python -m src.main list-channels
+```
+
+Output:
+```
+📺 Available Channels
+
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Channel          ┃ Name            ┃ Type                ┃ Handle            ┃ Format         ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ momentum_mindset │ Momentum...     │ Ai Generated Shorts │ @MomentumMindset  │ 9:16 (shorts)  │
+│ wealth_wisdom    │ Wealth Wisdom   │ Ai Generated Shorts │ @WealthWisdom     │ 9:16 (shorts)  │
+│ finance_wins     │ Finance Wins    │ Youtube Compilation │ @FinanceWins      │ 16:9 (compila..│
+└──────────────────┴─────────────────┴─────────────────────┴───────────────────┴────────────────┘
+```
+
+### OAuth Setup for Multiple Channels
+
+You have **two options** for YouTube authentication:
+
+#### Option A: Different YouTube Accounts (Recommended)
+- Each channel uses a separate YouTube account
+- Complete independence
+- Better for scaling
+
+1. Create/use 3 different Google accounts
+2. Create OAuth credentials for each account
+3. Place `credentials.json` in each channel directory:
+   ```
+   channels/momentum_mindset/credentials.json
+   channels/wealth_wisdom/credentials.json
+   channels/finance_wins/credentials.json
+   ```
+4. First time you run a command for a channel, it will open OAuth flow
+5. Token is saved in the same directory automatically
+
+#### Option B: Same YouTube Account
+- All channels under one Google account
+- Uses playlists or brand channels
+- Simpler setup but less flexible
+
+Same process, but use the same `credentials.json` for all channels.
+
+### Working with Channels
+
+All CLI commands now support `--channel` flag:
+
+```bash
+# Generate videos for specific channel
+python -m src.main generate --channel momentum_mindset --count 6
+
+# Upload videos for specific channel
+python -m src.main batch-upload --channel wealth_wisdom --limit 10
+
+# Schedule videos for specific channel
+python -m src.main batch-schedule --channel finance_wins
+
+# If you don't specify --channel, it uses the first available channel
+python -m src.main generate --count 1
+# → Auto-selects momentum_mindset (first alphabetically)
+```
+
+### Batch Process All Channels
+
+Process all channels automatically in sequence:
+
+```bash
+# Generate 3 videos for each AI channel
+python -m src.main batch-all --count 3
+
+# Generate and update Reddit stories first
+python -m src.main batch-all --count 5 --update
+```
+
+Output shows progress for each channel with summary table at the end.
+
+### Smart Scheduling
+
+Each channel has independent scheduling configuration. The scheduler:
+- ✅ Checks existing scheduled videos on YouTube
+- ✅ Fills gaps in the schedule based on channel config
+- ✅ Never schedules at the same time
+- ✅ Respects channel-specific hours (e.g., 6 AM - 4 PM)
+
+Example workflow:
+```bash
+# 1. Generate videos
+python -m src.main generate --channel momentum_mindset --count 6
+
+# 2. Upload to YouTube (Phase 1)
+python -m src.main batch-upload --channel momentum_mindset
+
+# 3. Schedule with optimal times (Phase 2)
+python -m src.main batch-schedule --channel momentum_mindset
+
+# Check YouTube Studio - videos are scheduled!
+```
+
+### Benefits of Multi-Channel
+
+- ✅ **Diversification**: Different niches, different audiences
+- ✅ **Risk Management**: Not all eggs in one basket
+- ✅ **A/B Testing**: Compare performance across channels
+- ✅ **Revenue Optimization**: Target high-CPM niches (finance $8-15 CPM vs general $2-5)
+- ✅ **Automation**: One command processes all channels
+- ✅ **Independence**: Separate credentials, configs, schedules
+
+For detailed multi-channel documentation, see `.github/MULTI_CHANNEL_SYSTEM.md`.
+
 ## Usage
 
 ### Validate Configuration
@@ -114,10 +317,16 @@ python -m src.main validate-config
 python -m src.main check-server
 ```
 
+### List All Channels
+
+```bash
+python -m src.main list-channels
+```
+
 ### Update Stories from Reddit
 
 ```bash
-# Fetch 25 stories from configured subreddit
+# Fetch stories using channel config subreddit
 python -m src.main update-stories
 
 # Custom subreddit and limit
@@ -126,12 +335,45 @@ python -m src.main update-stories --subreddit getdisciplined --limit 50
 
 ### Generate Videos
 
+**Single Channel:**
 ```bash
-# Generate 1 video from Google Sheets
-python -m src.main generate --count 1
+# Generate 1 video for specific channel
+python -m src.main generate --channel momentum_mindset --count 1
 
 # Generate 3 videos and update stories first
-python -m src.main generate --count 3 --update
+python -m src.main generate --channel wealth_wisdom --count 3 --update
+
+# Use specific voice profile
+python -m src.main generate --channel momentum_mindset --count 1 --profile brody_calm
+```
+
+**All Channels (Batch):**
+```bash
+# Generate 3 videos for each AI channel automatically
+python -m src.main batch-all --count 3
+
+# Generate and update Reddit stories first
+python -m src.main batch-all --count 5 --update
+```
+
+### Upload Videos to YouTube
+
+**Phase 1: Upload as Private**
+```bash
+# Upload videos for a channel (max 20/day due to API limits)
+python -m src.main batch-upload --channel momentum_mindset
+
+# Upload only 5 videos
+python -m src.main batch-upload --channel wealth_wisdom --limit 5
+```
+
+**Phase 2: Schedule with Metadata**
+```bash
+# Preview schedule first (dry run)
+python -m src.main batch-schedule --channel momentum_mindset --dry-run
+
+# Schedule videos with optimal times
+python -m src.main batch-schedule --channel momentum_mindset
 ```
 
 ### Generate from Single Story
@@ -139,6 +381,9 @@ python -m src.main generate --count 3 --update
 ```bash
 # Use Reddit post ID
 python -m src.main generate-single abc123xyz
+
+# With specific channel
+python -m src.main generate-single abc123xyz --channel momentum_mindset
 ```
 
 ## Configuration Options
@@ -371,22 +616,44 @@ LOG_MAX_AGE_DAYS=7
 ```
 youtube-shorts-factory/
 ├── src/
-│   ├── main.py              # CLI entry point
-│   ├── config.py            # Configuration management
-│   ├── models.py            # Data models
-│   ├── workflow.py          # Main orchestrator
+│   ├── main.py                 # CLI entry point with multi-channel commands
+│   ├── config.py               # Configuration management
+│   ├── models.py               # Data models
+│   ├── workflow.py             # Main orchestrator (channel-aware)
+│   ├── channel_config.py       # Channel configuration loader
 │   └── services/
-│       ├── reddit.py        # Reddit scraping
-│       ├── sheets.py        # Google Sheets
-│       ├── llm.py          # Gemini LLM
-│       ├── media.py        # Media server client
-│       ├── youtube.py      # YouTube upload
+│       ├── reddit.py           # Reddit scraping
+│       ├── sheets.py           # Google Sheets
+│       ├── llm.py              # Gemini LLM
+│       ├── media.py            # Media server client
+│       ├── youtube.py          # YouTube upload (multi-channel support)
+│       ├── youtube_downloader.py  # YouTube video downloader (yt-dlp)
+│       ├── video_compiler.py   # Video compilation (FFmpeg)
+│       ├── scheduler.py        # Smart video scheduling
+│       ├── seo_optimizer.py    # SEO metadata generation
 │       └── profile_manager.py  # Voice/music profiles
-├── docs/legacy/workflow_youtube_shorts/  # Original n8n workflow (reference)
+│
+├── channels/                   # Multi-channel system
+│   ├── momentum_mindset/      # Channel 1
+│   │   ├── channel.yaml       # Channel configuration
+│   │   ├── profiles.yaml      # Voice/music profiles (optional)
+│   │   ├── credentials.json   # YouTube OAuth (gitignored)
+│   │   ├── token_youtube.json # OAuth token (gitignored)
+│   │   ├── assets/            # Channel assets
+│   │   └── output/            # Generated videos
+│   ├── wealth_wisdom/         # Channel 2
+│   └── finance_wins/          # Channel 3
+│
+├── .github/
+│   └── MULTI_CHANNEL_SYSTEM.md  # Multi-channel documentation
+│
+├── docs/legacy/workflow_youtube_shorts/  # Original n8n workflow
+│
 ├── config/
-│   └── profiles.yaml       # Voice & music profiles
-├── pyproject.toml          # Dependencies
-├── .env.example            # Environment template
+│   └── profiles.yaml          # Global voice & music profiles
+│
+├── pyproject.toml             # Dependencies
+├── .env.example               # Environment template
 └── README.md
 ```
 

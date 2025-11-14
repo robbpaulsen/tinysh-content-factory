@@ -250,11 +250,13 @@ def validate_config():
         console.print(f"[green]✓[/green] Google credentials file found")
 
     # Check optional settings
-    if not settings.background_music_id:
-        warnings.append("Background music not configured (optional)")
+    if not settings.profiles_path.exists():
+        warnings.append(f"Profiles file not found: {settings.profiles_path} (optional)")
 
-    if settings.tts_engine == "chatterbox" and not settings.chatterbox_voice_sample_id:
-        warnings.append("Chatterbox voice sample not configured (using default voice)")
+    if settings.active_profile:
+        console.print(f"[green]✓[/green] Active profile: {settings.active_profile}")
+    else:
+        warnings.append("No active profile set (will use default from profiles.yaml)")
 
     # Print results
     if errors:

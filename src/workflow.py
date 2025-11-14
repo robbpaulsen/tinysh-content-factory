@@ -74,7 +74,15 @@ class WorkflowOrchestrator:
 
         # Initialize services
         self.reddit = RedditService()
-        self.sheets = GoogleSheetsService()
+
+        # Initialize Google Sheets with channel-specific tab if available
+        sheet_tab = None
+        if self.channel_config and hasattr(self.channel_config.config.content, 'sheet_tab'):
+            sheet_tab = self.channel_config.config.content.sheet_tab
+            if sheet_tab:
+                logger.info(f"Using Google Sheets tab: {sheet_tab}")
+
+        self.sheets = GoogleSheetsService(sheet_name=sheet_tab)
         self.llm = LLMService()
         self.media = MediaService()
 

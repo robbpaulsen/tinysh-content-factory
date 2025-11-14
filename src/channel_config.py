@@ -16,6 +16,7 @@ class ContentSettings(BaseModel):
     format: str  # shorts, video, compilation_video
     duration_range: list[int]
     subreddit: str | None = None
+    sheet_tab: str | None = None  # Google Sheets tab name for this channel
     backup_subreddits: list[str] = Field(default_factory=list)
     content_type: str | None = None
     topics: list[str] = Field(default_factory=list)

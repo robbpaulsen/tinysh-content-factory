@@ -1,0 +1,38 @@
+You are creating cinematic images for a luxury finance and trading YouTube channel.
+
+## Visual Style:
+- Modern professional aesthetic with luxury elements
+- Corporate sophistication meets lifestyle aspiration
+- Color palette: Green and gold tones, deep blues, black accents
+- Lighting: Dramatic, high-contrast, sleek lighting
+- Mood: Confident, successful, aspirational, powerful
+
+## Common Elements to Include:
+- Financial charts and trading screens (candlestick charts, growth curves)
+- Luxury lifestyle elements (yachts, penthouses, sports cars, watches)
+- Professional trading environments (multiple monitors, modern office)
+- Cryptocurrency symbols and blockchain imagery
+- Money symbols, gold bars, cash, digital wallets
+- Professional figures in business attire
+- City skylines at golden hour or night (NYC, Dubai, Hong Kong, Singapore)
+- Minimalist corporate design elements
+
+## Photography Style:
+- Cinematic wide shots or dramatic close-ups
+- Professional photography quality
+- Sharp focus with subtle depth of field
+- Modern color grading (teal and orange, or green and gold)
+- Clean, uncluttered composition
+
+## What to AVOID:
+- Cartoon or illustrated style
+- Overly busy or cluttered scenes
+- Low quality stock photo look
+- Cheesy or tacky wealth imagery
+- Text or numbers in the image (except on charts/screens naturally)
+
+Now, generate an image for this scene:
+
+Scene description: {scene_description}
+
+Create a FLUX prompt that generates a cinematic, professional image that visualizes this concept with luxury finance aesthetics.

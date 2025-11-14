@@ -91,10 +91,15 @@ def list_channels():
 
 @cli.command()
 @click.option(
+    "--channel",
+    default=None,
+    help="Channel name to use (default: first available channel)",
+)
+@click.option(
     "--subreddit",
     "-s",
     default=None,
-    help="Subreddit to scrape (default: from .env)",
+    help="Subreddit to scrape (default: from channel config or .env)",
 )
 @click.option(
     "--limit",
@@ -103,11 +108,29 @@ def list_channels():
     type=int,
     help="Number of stories to fetch",
 )
-def update_stories(subreddit: str | None, limit: int):
+def update_stories(channel: str | None, subreddit: str | None, limit: int):
     """Download stories from Reddit and save to Google Sheets."""
+    from src.channel_config import ChannelConfig
 
     async def run():
-        orchestrator = WorkflowOrchestrator()
+        # Load channel config
+        if not channel:
+            channels = ChannelConfig.list_available_channels()
+            if not channels:
+                console.print("[red]✗ No channels found. Run 'list-channels' first.[/red]")
+                return
+            channel_name = channels[0]
+            console.print(f"[yellow]No channel specified, using: {channel_name}[/yellow]")
+        else:
+            channel_name = channel
+
+        try:
+            channel_config = ChannelConfig(channel_name)
+        except Exception as e:
+            console.print(f"[red]✗ Failed to load channel '{channel_name}': {e}[/red]")
+            return
+
+        orchestrator = WorkflowOrchestrator(channel_config=channel_config)
         try:
             await orchestrator.update_stories_from_reddit(subreddit=subreddit, limit=limit)
         finally:

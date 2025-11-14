@@ -12,11 +12,10 @@ Pillow
 nltk
 imageio
 
-# PyTorch stack - MUST be installed first with compatible versions
-torch==2.1.2
-torchvision==0.16.2
-torchaudio==2.1.2
-transformers==4.36.2
+# PyTorch stack - Compatible with transformers 4.46.3
+torch>=2.3.0,<2.5.0
+torchvision>=0.18.0,<0.20.0
+torchaudio>=2.3.0,<2.5.0
 
 # TTS engines (require PyTorch above)
 kokoro

@@ -13,6 +13,7 @@ content:
   format: "shorts"
   duration_range: [15, 45]  # seconds
   subreddit: "selfimprovement"
+  sheet_tab: "momentum_mindset"  # Google Sheets tab name for this channel
   backup_subreddits:
     - "getdisciplined"
     - "DecidingToBeBetter"

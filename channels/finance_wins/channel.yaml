@@ -12,6 +12,7 @@ channel_type: "youtube_compilation"  # Different from AI generation
 content:
   format: "compilation_video"
   duration_range: [180, 600]  # 3-10 minutes
+  sheet_tab: "finance_wins"  # Google Sheets tab name (not used for compilations)
   compilation_type: "top_N"  # top_5, top_10, best_of
 
 # Video format

@@ -20,16 +20,17 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 class GoogleSheetsService:
     """Service for managing stories in Google Sheets."""
 
-    def __init__(self, credentials_path: Path | None = None):
+    def __init__(self, credentials_path: Path | None = None, sheet_name: str | None = None):
         """
         Initialize Google Sheets service.
 
         Args:
             credentials_path: Path to OAuth credentials JSON
+            sheet_name: Custom sheet tab name (default: from settings.sheet_name)
         """
         self.credentials_path = credentials_path or settings.google_credentials_path
         self.spreadsheet_id = settings.google_sheet_id
-        self.sheet_name = settings.sheet_name
+        self.sheet_name = sheet_name or settings.sheet_name
         self.service = None
         self._authenticate()
 

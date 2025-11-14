@@ -40,6 +40,24 @@ profiles:
       volume: 0.08
       rotation: random
 
+  frank_professional:
+    name: "Frank - Young Professional Trader"
+    description: "Strong, confident almost cocky voice for serious finance topics"
+    voice:
+      engine: chatterbox
+      sample_path: "D:/Music/voces/frank/Frank-Louis_pvc_sp105_s30_sb85_se50_b_m2.mp3"
+      temperature: 0.75
+      cfg_weight: 0.65
+      exaggeration: 0.55
+    music:
+      playlist:
+        - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
+          name: "Billionaire Power Theme"
+        - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
+          name: "Billions Power Theme"
+      volume: 0.1
+      rotation: random
+
   kokoro_neutral:
     name: "Kokoro - Neutral Professional"
     description: "Fast TTS without cloning, neutral professional tone"
@@ -56,4 +74,4 @@ profiles:
       rotation: sequential
 
 # Default profile for this channel
-default_profile: brody_professional
+default_profile: frank_professional

@@ -11,9 +11,9 @@ channel_type: "ai_generated_shorts"
 # Content settings
 content:
   format: "shorts"
-  duration_range: [15, 45]  # seconds
-  subreddit: "personalfinance"  # Primary source
-  sheet_tab: "wealth_wisdom"  # Google Sheets tab name for this channel
+  duration_range: [15, 45] # seconds
+  subreddit: "personalfinance" # Primary source
+  sheet_tab: "wealth_wisdom" # Google Sheets tab name for this channel
   backup_subreddits:
     - "Fire"
     - "financialindependence"
@@ -33,7 +33,7 @@ content:
 
 # Video format
 video:
-  aspect_ratio: "9:16"  # Shorts vertical format
+  aspect_ratio: "9:16" # Shorts vertical format
   width: 768
   height: 1344
 
@@ -44,18 +44,18 @@ scenes:
 # Image generation (FLUX)
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
-  style: "modern professional, sleek design, financial charts, money symbols, green and gold tones, corporate aesthetic, minimalist"
+  style: "modern professional, almost dandy, sleek design, financial charts, yachts, stock trading symbols, crypto trading ambient, green and gold tones, corporate aesthetic, minimalist"
 
 # YouTube upload settings
 youtube:
-  category_id: "26"  # Howto & Style (good for finance tips)
+  category_id: "26" # Howto & Style (good for finance tips)
   made_for_kids: false
   schedule:
     videos_per_day: 6
-    start_hour: 7   # 7 AM (different from momentum)
-    end_hour: 17    # 5 PM
+    start_hour: 6 # 6 AM (different from momentum)
+    end_hour: 16 # 4 PM
     interval_hours: 2
-    timezone: "America/Chicago"
+    timezone: "America/Mexico_City"
   default_tags:
     - finance
     - money
@@ -65,12 +65,14 @@ youtube:
     - financial freedom
     - passive income
     - shorts
+    - crypto
+    - high life
 
 # SEO settings
 seo:
   enabled: true
   channel_name: "WealthWisdom"
-  target_audience: "people seeking financial education and money management tips"
+  target_audience: "people seeking financial education, how to start trading, money investment tips and designing your own trading portfolio"
   primary_keywords:
     - finance
     - money management
@@ -78,7 +80,9 @@ seo:
     - wealth building
     - financial freedom
     - passive income
+    - crypto secrets
+    - sell
 
 # Voice & Music
-default_profile: "brody_calm"  # Professional, trustworthy voice
+default_profile: "frank_professional" # Professional, trustworthy voice
 profiles_path: "profiles.yaml"

@@ -42,6 +42,7 @@ class ImageSettings(BaseModel):
 
     model: str
     style: str
+    negative_prompt: str | None = None  # Negative prompt to avoid deformities (appended as positive guidance for FLUX)
 
 
 class YouTubeScheduleSettings(BaseModel):

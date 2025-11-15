@@ -41,6 +41,42 @@ The system loads profiles in this order:
 - `channels/wealth_wisdom/profiles.yaml` - Finance-focused profiles (professional, authoritative)
 - `channels/momentum_mindset/profiles.yaml` - Motivation-focused profiles (energetic, inspiring)
 
+### Google OAuth Credentials (credentials.json)
+
+**IMPORTANT:** OAuth credentials are **account-specific** and **cannot be shared** between different Google accounts.
+
+#### Multi-Channel with Separate Accounts (Recommended)
+
+If each channel uses a **different Google/YouTube account** (most common setup):
+
+```
+channels/momentum_mindset/credentials.json   ← OAuth for account1@gmail.com
+channels/wealth_wisdom/credentials.json      ← OAuth for account2@gmail.com
+channels/finance_wins/credentials.json       ← OAuth for account3@gmail.com
+```
+
+**DO NOT use `.credentials/credentials.json` fallback** - it will cause 403 errors when trying to access other accounts' channels.
+
+**Always specify `--channel`:**
+```bash
+python -m src.main generate --channel momentum_mindset --count 1
+python -m src.main update-stories --channel wealth_wisdom --limit 5
+```
+
+#### Single Account for All Channels (Alternative)
+
+If all channels are **brand channels** under the **same Google account**:
+
+```
+.credentials/credentials.json                ← OAuth for main account
+channels/momentum_mindset/credentials.json   ← Copy of same OAuth (optional)
+channels/wealth_wisdom/credentials.json      ← Copy of same OAuth (optional)
+```
+
+In this case, you can use the global fallback, but it's still recommended to place credentials in each channel directory for consistency.
+
+**Error 403 Forbidden:** This error means you're trying to use OAuth credentials from one Google account to access a YouTube channel owned by a different account. Each channel must use credentials from its owning account.
+
 ### Custom Prompts (prompts/*.txt)
 
 Custom prompts are **optional** and loaded per-channel:
@@ -210,12 +246,107 @@ If you have channels with incorrect structure:
 
 ## Adding a New Channel
 
-1. Create directory: `mkdir -p channels/new_channel/{assets,prompts,output}`
-2. Create `channel.yaml` (copy from existing channel and modify)
-3. Create `profiles.yaml` with channel-appropriate voices/music
-4. (Optional) Add custom prompts in `prompts/script.txt` and `prompts/image.txt`
-5. Add credentials: `channels/new_channel/credentials.json`
-6. Test: `python -m src.main generate --channel new_channel --count 1`
+### 1. Create Directory Structure
+
+```bash
+mkdir -p channels/new_channel/{assets,prompts,output}
+```
+
+### 2. Create channel.yaml
+
+Copy from an existing channel and modify:
+```bash
+cp channels/momentum_mindset/channel.yaml channels/new_channel/channel.yaml
+# Edit with your channel-specific settings
+```
+
+### 3. Create profiles.yaml
+
+Copy and customize voice/music profiles:
+```bash
+cp channels/momentum_mindset/profiles.yaml channels/new_channel/profiles.yaml
+# Edit with your channel-specific voices and music
+```
+
+### 4. (Optional) Add Custom Prompts
+
+If you want custom content generation:
+```bash
+# Create prompts directory
+mkdir channels/new_channel/prompts
+
+# Add custom script prompt
+echo "Your custom script prompt here..." > channels/new_channel/prompts/script.txt
+
+# Add custom image prompt
+echo "Your custom image style here..." > channels/new_channel/prompts/image.txt
+```
+
+### 5. Setup Google OAuth Credentials
+
+**For each channel with a separate Google account:**
+
+a. **Go to Google Cloud Console:**
+   - Visit: https://console.cloud.google.com/
+   - Sign in with the Google account that owns this YouTube channel
+
+b. **Create a new project:**
+   - Click "Select a project" → "New Project"
+   - Name: "new-channel-youtube" (or similar)
+   - Click "Create"
+
+c. **Enable Required APIs:**
+   - Go to "APIs & Services" → "Library"
+   - Search and enable:
+     - **YouTube Data API v3**
+     - **Google Sheets API**
+
+d. **Create OAuth 2.0 Credentials:**
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth client ID"
+   - If prompted, configure OAuth consent screen:
+     - User Type: External
+     - App name: "New Channel Content Factory"
+     - User support email: your email
+     - Developer contact: your email
+     - Click "Save and Continue" through the scopes and test users
+   - Back to Create OAuth client ID:
+     - Application type: **Desktop app**
+     - Name: "new_channel_oauth"
+     - Click "Create"
+
+e. **Download and Save Credentials:**
+   - Click "Download JSON" on the created credential
+   - Rename the downloaded file to `credentials.json`
+   - Move to: `channels/new_channel/credentials.json`
+
+   ```bash
+   # Example on Windows
+   move Downloads\client_secret_*.json channels\new_channel\credentials.json
+   ```
+
+### 6. First Authentication
+
+```bash
+# First run will open browser for OAuth authentication
+python -m src.main update-stories --channel new_channel --limit 1
+
+# After authenticating, token is saved automatically:
+# channels/new_channel/token_youtube.json
+```
+
+### 7. Test Video Generation
+
+```bash
+python -m src.main generate --channel new_channel --count 1 --verbose
+```
+
+### Important Notes:
+
+- **Each Google account = separate credentials.json** - You cannot reuse credentials between accounts (will get 403 error)
+- **First run requires browser** - OAuth flow opens browser for authentication
+- **Token auto-refreshes** - After initial auth, token_youtube.json handles refreshing
+- **Gitignored** - Both credentials.json and token_youtube.json are in .gitignore for security
 
 ## Best Practices
 

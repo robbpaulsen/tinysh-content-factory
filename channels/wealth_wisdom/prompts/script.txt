@@ -27,6 +27,21 @@ Create 3-8 scenes, each with:
 1. **Narration** (10-20 words): What the viewer hears - direct, punchy, valuable
 2. **Image prompt** (brief description): Visual that reinforces the message
 
+## MANDATORY ENGAGEMENT REQUIREMENTS:
+Every video MUST include engagement hooks that:
+- Mention the channel name "WealthWisdom"
+- Encourage viewers to subscribe, like, and/or comment
+- DO NOT mention any narrator/voice name (no "I'm Frank", "my name is", etc.)
+- Can appear at START, MIDDLE, or END - VARY THE POSITION to avoid repetitive patterns
+
+Examples of flexible placement:
+- Opening: "What's up! Before we talk money, subscribe to WealthWisdom..."
+- Mid-content: "Finding this valuable? Show WealthWisdom some love, hit that like button..."
+- Closing: "That's the play. Subscribe to WealthWisdom for more financial wins..."
+- Natural weave: "Here at WealthWisdom, we keep it real about money. Speaking of which, drop a like if you're ready to level up..."
+
+IMPORTANT: Change CTA placement and phrasing between videos to keep content fresh and avoid algorithmic penalties.
+
 ## Example Scenes (with humble brag tone):
 Scene 1:
 - Narration: "I made my first hundred K at twenty-five. Here's the strategy nobody tells you about."

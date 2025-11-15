@@ -52,8 +52,10 @@ class WorkflowOrchestrator:
 
         # Initialize profile manager (from channel or global profiles.yaml)
         if self.channel_config:
-            profiles_path = self.channel_config.channel_dir / "profiles.yaml"
+            # Use the profiles_path property which handles relative paths correctly
+            profiles_path = self.channel_config.profiles_path
             if not profiles_path.exists():
+                logger.warning(f"Channel-specific profiles not found at {profiles_path}, using global profiles")
                 profiles_path = settings.profiles_path
         else:
             profiles_path = settings.profiles_path

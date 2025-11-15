@@ -45,7 +45,7 @@ class RedditService:
         Get top stories from a subreddit using public JSON endpoint.
 
         Args:
-            subreddit_name: Subreddit name (defaults to settings.subreddit)
+            subreddit_name: Subreddit name (defaults to settings.subreddit if not provided)
             time_filter: Time filter for top posts
             limit: Maximum number of posts to retrieve
             min_content_length: Minimum content length to filter
@@ -53,7 +53,10 @@ class RedditService:
         Returns:
             List of RedditPost objects
         """
-        subreddit_name = subreddit_name or settings.subreddit
+        if not subreddit_name:
+            subreddit_name = settings.subreddit
+            logger.warning(f"No subreddit provided, using default from .env: r/{subreddit_name}")
+
         logger.info(f"Fetching top {limit} stories from r/{subreddit_name} ({time_filter})")
 
         # Use Reddit's public JSON endpoint (same as n8n)

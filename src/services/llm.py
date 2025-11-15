@@ -129,12 +129,17 @@ Generate only the motivational speech text, nothing else."""
         Args:
             story_title: Title of the story
             story_content: Content of the story
-            content_type: Type of content (defaults to settings.content_type)
+            content_type: Type of content (defaults to channel config or settings.content_type)
 
         Returns:
             Generated motivational speech text
         """
-        content_type = content_type or settings.content_type
+        # Use content_type from: 1) explicit arg, 2) channel config, 3) settings fallback
+        if not content_type:
+            if self.channel_config and self.channel_config.config.content.content_type:
+                content_type = self.channel_config.config.content.content_type
+            else:
+                content_type = settings.content_type
         # Run in thread pool to not block event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
@@ -253,14 +258,19 @@ IMPORTANT: Return ONLY valid JSON, no other text or markdown formatting."""
 
         Args:
             motivational_text: The motivational speech text
-            art_style: Art style description (defaults to settings.art_style)
+            art_style: Art style description (defaults to channel config or settings.art_style)
             story_title: Original story title (for custom prompts)
             story_content: Original story content (for custom prompts)
 
         Returns:
             VideoScript with scenes and metadata
         """
-        art_style = art_style or settings.art_style
+        # Use art_style from: 1) explicit arg, 2) channel config, 3) settings fallback
+        if not art_style:
+            if self.channel_config and self.channel_config.config.image and self.channel_config.config.image.style:
+                art_style = self.channel_config.config.image.style
+            else:
+                art_style = settings.art_style
         # Run in thread pool to not block event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(

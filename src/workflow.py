@@ -176,8 +176,13 @@ class WorkflowOrchestrator:
                     logger.info(f"Scene {idx}: Generating image + TTS in parallel")
                     voice_config = self.profile_manager.get_voice_config(self.active_profile)
 
+                    # Get negative prompt from channel config if available
+                    negative_prompt = None
+                    if self.channel_config and self.channel_config.config.image:
+                        negative_prompt = self.channel_config.config.image.negative_prompt
+
                     image, tts = await asyncio.gather(
-                        self.media.generate_and_upload_image(scene.image_prompt),
+                        self.media.generate_and_upload_image(scene.image_prompt, negative_prompt=negative_prompt),
                         self.media.generate_tts(scene.text, voice_config=voice_config)
                     )
 

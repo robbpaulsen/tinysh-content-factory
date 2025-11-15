@@ -45,6 +45,8 @@ scenes:
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
   style: "Create a cinematic image in a dramatic, high-contrast photographic style, with a cool blue color grading, subtly accented with elegant green and gold tones. The subject is a figure [doing something that subtly implies financial wisdom or success, such as contemplatively observing a complex financial chart projected onto a minimalist background, standing on a yacht deck overlooking a city skyline, or calmly overseeing multiple stock trading screens], captured from a distance. The foreground should be softly blurred, perhaps hinting at a sleek office interior or blurred financial data, to focus attention on the figure and the sophisticated financial landscape details. The overall visual should convey strength, wisdom, and a sense of calm determination, reflecting a modern professional, almost dandy aesthetic. The mood should feel inspirational and dignified, resembling a powerful financial documentary scene that speaks to astute investment and strategic growth."
+  # Negative prompt (converted to positive guidance for FLUX compatibility)
+  negative_prompt: "deformed iris, deformed pupils, bad teeth, deformed teeth, deformed lips, poorly drawn fingers, fused fingers, extra fingers, worst hand, poorly drawn hands, poorly drawn body, bad anatomy, bad proportions, extra limbs, malformed, mutated, mutilated, deformities, morbid"
 
 # YouTube upload settings
 youtube:

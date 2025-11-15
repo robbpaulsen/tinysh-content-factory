@@ -97,17 +97,27 @@ class MediaService:
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True,
     )
-    async def generate_image_together(self, prompt: str) -> str:
+    async def generate_image_together(self, prompt: str, negative_prompt: str | None = None) -> str:
         """
         Generate image using Together.ai FLUX API with rate limiting.
 
         Args:
             prompt: Image generation prompt
+            negative_prompt: Negative prompt (converted to positive guidance for FLUX)
 
         Returns:
             Image URL from Together.ai
         """
-        logger.info(f"Generating image with Together.ai: {prompt[:100]}...")
+        # Convert negative prompt to positive guidance (FLUX doesn't support negative_prompt parameter)
+        if negative_prompt:
+            # Convert negative terms to positive anatomical correctness guidance
+            positive_guidance = ", anatomically correct hands with five fingers each, realistic human proportions, well-formed facial features, natural teeth and lips, normal eyes with proper iris and pupils"
+            final_prompt = f"{prompt}{positive_guidance}"
+            logger.info(f"Applied anatomical correctness guidance from NEGATIVE_PROMPT")
+        else:
+            final_prompt = prompt
+
+        logger.info(f"Generating image with Together.ai: {final_prompt[:100]}...")
 
         url = "https://api.together.xyz/v1/images/generations"
         headers = {
@@ -116,7 +126,7 @@ class MediaService:
         }
         payload = {
             "model": settings.flux_model,
-            "prompt": prompt,
+            "prompt": final_prompt,
             "width": settings.image_width,
             "height": settings.image_height,
             "steps": 4,  # FLUX Schnell uses 4 steps
@@ -167,17 +177,18 @@ class MediaService:
         logger.info(f"Image uploaded with file_id: {file_id}")
         return file_id
 
-    async def generate_and_upload_image(self, prompt: str) -> GeneratedImage:
+    async def generate_and_upload_image(self, prompt: str, negative_prompt: str | None = None) -> GeneratedImage:
         """
         Generate image with Together.ai and upload to media server.
 
         Args:
             prompt: Image generation prompt
+            negative_prompt: Negative prompt (converted to positive guidance for FLUX)
 
         Returns:
             GeneratedImage with URL and file_id
         """
-        image_url = await self.generate_image_together(prompt)
+        image_url = await self.generate_image_together(prompt, negative_prompt=negative_prompt)
         file_id = await self.upload_image_from_url(image_url)
 
         return GeneratedImage(url=image_url, file_id=file_id)

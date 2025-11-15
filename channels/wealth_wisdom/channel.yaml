@@ -85,4 +85,4 @@ seo:
 
 # Voice & Music
 default_profile: "frank_professional" # Professional, trustworthy voice
-profiles_path: "profiles.yaml"
+profiles_path: "profiles.yaml"  # Channel-specific profiles

@@ -180,12 +180,24 @@ DURATION REQUIREMENTS:
 - Total speech should match motivational text length
 - Gemini token count: 32 tokens = 1 second
 
-MANDATORY SCRIPT STRUCTURE:
-The script must adopt a friendly, energetic, and engaging tone suitable for YouTube. The final script must follow this structure:
+MANDATORY CONTENT REQUIREMENTS:
+The script must adopt a friendly, energetic, and engaging tone suitable for YouTube.
 
-1. [OPENING HOOK]: A brief (max 5 seconds) energetic welcome and introduction to the video's main topic.
-2. [MAIN CONTENT]: The 10-45s content based on the provided material.
-3. [CLOSING CTA]: A clear, conversational Call-to-Action that explicitly mentions "MommentumMindset" and encourages the viewer to subscribe, like the video, and leave a comment.
+REQUIRED ELEMENTS (can appear in ANY order/position to avoid repetitive patterns):
+1. [MAIN CONTENT]: The core message based on the provided material (10-45 seconds total)
+2. [ENGAGEMENT HOOKS]: Must include call-to-action elements that:
+   - Mention the channel name "MomentumMindset"
+   - Encourage viewers to subscribe, like, and/or comment
+   - DO NOT mention any narrator/voice name (e.g., no "I'm Frank", "my name is", etc.)
+   - Can appear at the START, MIDDLE, or END of the video
+
+FLEXIBILITY: Vary the placement of engagement hooks to keep content fresh. Examples:
+- Opening: "Welcome to MomentumMindset! Before we dive in, hit subscribe..."
+- Mid-video: "If you're finding value here, show MomentumMindset some love with a like..."
+- Closing: "That's it! Subscribe to MomentumMindset for daily motivation..."
+- Mixed: Weave engagement naturally throughout
+
+IMPORTANT: Change the position and phrasing of CTAs between videos to avoid algorithmic penalties for repetitive structure.
 
 For each scene:
 1. Provide the exact text to be spoken (2-3 sentences max, ~64-192 tokens per scene)

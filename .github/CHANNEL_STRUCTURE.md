@@ -123,9 +123,37 @@ The workflow uses channel config to:
 3. **Initialize YouTube service**: With channel-specific credentials
 4. **Set output directory**: All videos go to channel's output dir
 
+## Configuration Priority System
+
+The system uses a **3-tier priority** for loading configuration:
+
+### Priority Order:
+1. **Explicit arguments** - Direct values passed to functions
+2. **Channel config** - Values from `channels/<channel_name>/channel.yaml`
+3. **Global fallback** - Values from `.env` (only if channel config not available)
+
+### Examples:
+
+**Content Type:**
+- wealth_wisdom → `"financial advice and money wisdom"` (from channel.yaml)
+- momentum_mindset → `"motivational speech"` (from channel.yaml)
+- No channel → `settings.content_type` (from .env)
+
+**Image Style:**
+- wealth_wisdom → Luxury finance aesthetic (from channel.yaml)
+- momentum_mindset → Inspirational cinematic style (from channel.yaml)
+- No channel → `settings.art_style` (from .env)
+
+**Subreddit:**
+- wealth_wisdom → `"personalfinance"` (from channel.yaml)
+- momentum_mindset → `"selfimprovement"` (from channel.yaml)
+- No channel → `settings.subreddit` (from .env)
+
+This ensures **each channel uses its own configuration** and doesn't mix content styles between channels.
+
 ## Bug Fixes Applied (2025-11-15)
 
-### Fixed Issues:
+### Session 1: File Loading Fixes
 
 1. **workflow.py line 54-59**: Was hardcoding `"profiles.yaml"` instead of using `channel_config.profiles_path` property
    - **Before**: `profiles_path = self.channel_config.channel_dir / "profiles.yaml"`
@@ -137,6 +165,22 @@ The workflow uses channel config to:
 
 3. **channel.yaml profiles_path**: Updated to use relative paths correctly
    - **Value**: `profiles_path: "profiles.yaml"` (relative to channel dir)
+
+### Session 2: Configuration Priority Fixes
+
+4. **llm.py line 137**: Was using global `.env` content_type instead of channel config
+   - **Before**: `content_type = content_type or settings.content_type`
+   - **After**: Uses `channel_config.config.content.content_type` if available, falls back to settings only if no channel_config
+
+5. **llm.py line 263**: Was using global `.env` art_style instead of channel config
+   - **Before**: `art_style = art_style or settings.art_style`
+   - **After**: Uses `channel_config.config.image.style` if available, falls back to settings only if no channel_config
+
+6. **reddit.py line 56**: Added warning when using global `.env` subreddit fallback
+   - **Before**: Silent fallback to `settings.subreddit`
+   - **After**: Logs warning when no subreddit provided and falling back to .env
+
+**Impact**: Fixes the critical bug where wealth_wisdom channel was generating content with momentum_mindset's configuration (motivational speech instead of financial advice, wrong art style, wrong subreddit)
 
 ## Validation
 

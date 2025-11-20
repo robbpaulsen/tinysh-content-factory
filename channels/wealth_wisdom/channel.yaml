@@ -3,7 +3,7 @@
 
 name: "Wealth Wisdom"
 description: "Daily financial tips and money management wisdom"
-handle: "@WealthWisdomShorts"
+handle: "@WealthWiisdomShorts"
 
 # Channel type
 channel_type: "ai_generated_shorts"
@@ -44,36 +44,50 @@ scenes:
 # Image generation (FLUX)
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
-  style: "Create a cinematic image in a dramatic, high-contrast photographic style, with a cool blue color grading, subtly accented with elegant green and gold tones. The subject is a figure [doing something that subtly implies financial wisdom or success, such as contemplatively observing a complex financial chart projected onto a minimalist background, standing on a yacht deck overlooking a city skyline, or calmly overseeing multiple stock trading screens], captured from a distance. The foreground should be softly blurred, perhaps hinting at a sleek office interior or blurred financial data, to focus attention on the figure and the sophisticated financial landscape details. The overall visual should convey strength, wisdom, and a sense of calm determination, reflecting a modern professional, almost dandy aesthetic. The mood should feel inspirational and dignified, resembling a powerful financial documentary scene that speaks to astute investment and strategic growth."
-  # Negative prompt (converted to positive guidance for FLUX compatibility)
-  negative_prompt: "deformed iris, deformed pupils, bad teeth, deformed teeth, deformed lips, poorly drawn fingers, fused fingers, extra fingers, worst hand, poorly drawn hands, poorly drawn body, bad anatomy, bad proportions, extra limbs, malformed, mutated, mutilated, deformities, morbid"
+  style: "Create a photorealistic, cinematic image in a dramatic, high-contrast style. Apply a cool blue color grading, subtly accented with elegant green and gold tones to represent wealth. The scene features a mysterious professional figure **seen strictly from behind or in silhouette**, ensuring **no facial features are visible**. The figure is [standing on a balcony overlooking a blurred city skyline at night, observing a large holographic market chart projected on a glass wall, or walking through a modern corridor towards a bright light representing future success]. The composition uses a 'shallow depth of field' to keep the background softly blurred, emphasizing the atmosphere and the figure's posture rather than their identity. The visual language must be strictly atmospheric and narrative, **avoiding any text, logos, icons, or graphical overlays**. The mood creates a sense of calm determination, wisdom, and financial strategy, evoking the aesthetic of a high-end financial documentary."
 
 # YouTube upload settings
 youtube:
-  category_id: "26" # Howto & Style (good for finance tips)
+  category_id: "27" # Education (good for finance tips)
   made_for_kids: false
   schedule:
-    videos_per_day: 6
-    start_hour: 6 # 6 AM (different from momentum)
+    videos_per_day: 3
+    start_hour: 12 # 12 pm (different from momentum)
     end_hour: 16 # 4 PM
     interval_hours: 2
     timezone: "America/Mexico_City"
   default_tags:
     - finance
-    - money
     - investing
     - personal finance
     - wealth
-    - financial freedom
     - passive income
     - shorts
     - crypto
     - high life
+    - wisdom
+    - financial freedom
+    - success
+    - mindset
+    - entrepreneurship
+    - investing for beginners
+    - business tips
+    - passive income
+    - millionaire habits
+    - personal finance
+    - wealth creation
+    - hustle
+    - motivation
+    - shorts
+    - finance shorts
+    - wealth wisdom
+    - mindset
+    - money
 
 # SEO settings
 seo:
   enabled: true
-  channel_name: "WealthWisdom"
+  channel_name: "WealthWisdomShorts"
   target_audience: "people seeking financial education, how to start trading, money investment tips and designing your own trading portfolio"
   primary_keywords:
     - finance
@@ -83,8 +97,7 @@ seo:
     - financial freedom
     - passive income
     - crypto secrets
-    - sell
 
 # Voice & Music
 default_profile: "frank_professional" # Professional, trustworthy voice
-profiles_path: "profiles.yaml"  # Channel-specific profiles
+profiles_path: "profiles.yaml" # Channel-specific profiles

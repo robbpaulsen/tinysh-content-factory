@@ -228,4 +228,3 @@ docs/legacy/workflow_youtube_shorts/*.json
 !tools/.gitkeep
 !scripts/.gitkeep
 !tests/.gitkeep
-bulk-gen-wisdom.ps1

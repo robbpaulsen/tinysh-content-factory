@@ -17,22 +17,36 @@ profiles:
     voice:
       engine: chatterbox
       sample_path: "D:/Music/voces/brody/brody-loneliness.mp3"
-      exaggeration: 0.55
+      exaggeration: 0.5
       cfg_weight: 0.65
       temperature: 0.7
 
     music:
       playlist:
-        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
-          name: "Night Trouble"
         - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
           name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
         - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
-          name: "Motivational - Background"
+        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+          name: "Run the Jewels"
+        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
+          name: "Tunder"
+        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
+          name: "Simpin"
+        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
+          name: "Revive"
+        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
+          name: "Ls"
+        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
+          name: "Surrender"
+        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
+          name: "FindingMe"
+        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
+          name: "EveningLand"
       volume: 0.12
       rotation: random
 
@@ -53,10 +67,28 @@ profiles:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
           name: "Alone - Emmit Fenn"
-        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
-          name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
         - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
           name: "Down the Rabbit Hole"
+        - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
+          name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+          name: "Run the Jewels"
+        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
+          name: "Tunder"
+        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
+          name: "Simpin"
+        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
+          name: "Revive"
+        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
+          name: "Ls"
+        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
+          name: "Surrender"
+        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
+          name: "FindingMe"
+        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
+          name: "EveningLand"
       volume: 0.1 # 0.0-1.0, background music volume
       rotation: random # Options: random, sequential
 
@@ -74,16 +106,30 @@ profiles:
 
     music:
       playlist:
-        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
-          name: "Night Trouble"
         - path: "D:/Music/tracks/10-26seconds/track_Alone-Emmit-Fenn.mp3"
           name: "Alone - Emmit Fenn"
+        - path: "D:/Music/tracks/10-26seconds/Track-Night-Trouble.mp3"
+          name: "Night Trouble"
         - path: "D:/Music/tracks/10-26seconds/track-down-rabbithole.wav"
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
-          name: "Motivational - Background"
+        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+          name: "Run the Jewels"
+        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
+          name: "Tunder"
+        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
+          name: "Simpin"
+        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
+          name: "Revive"
+        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
+          name: "Ls"
+        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
+          name: "Surrender"
+        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
+          name: "FindingMe"
+        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
+          name: "EveningLand"
       volume: 0.12
       rotation: random
 
@@ -107,15 +153,15 @@ profiles:
       rotation: random
 
   # Real - David
-  real_david:
-    name: "Real - David"
+  oliver_motivational:
+    name: "Motivational - Oliver"
     description: "Strongly opinionated, he'll hit you with the TRUTH but at what cost ?"
 
     voice:
       engine: chatterbox
-      sample_path: "D:/Music/voces/david/david-voice.mp3"
-      exaggeration: 0.6
-      cfg_weight: 0.6
+      sample_path: "D:/Music/voces/oliver/olivers-voice.mp3"
+      exaggeration: 0.55
+      cfg_weight: 0.65
       temperature: 0.7
 
     music:
@@ -128,6 +174,22 @@ profiles:
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
+        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+          name: "Run the Jewels"
+        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
+          name: "Tunder"
+        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
+          name: "Simpin"
+        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
+          name: "Revive"
+        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
+          name: "Ls"
+        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
+          name: "Surrender"
+        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
+          name: "FindingMe"
+        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
+          name: "EveningLand"
       volume: 0.12
       rotation: random
 

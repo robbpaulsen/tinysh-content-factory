@@ -41,8 +41,6 @@ scenes:
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
   style: "cinematic, dramatic lighting, inspirational atmosphere, golden hour, professional photography"
-  # Negative prompt (converted to positive guidance for FLUX compatibility)
-  negative_prompt: "deformed iris, deformed pupils, bad teeth, deformed teeth, deformed lips, poorly drawn fingers, fused fingers, extra fingers, worst hand, poorly drawn hands, poorly drawn body, bad anatomy, bad proportions, extra limbs, malformed, mutated, mutilated, deformities, morbid"
 
 # YouTube upload settings
 youtube:

@@ -7,38 +7,44 @@ profiles:
     description: "Calm, trustworthy, professional tone for finance tips"
     voice:
       engine: chatterbox
-      sample_path: "D:/Music/voces/brody/sample.mp3"
+      sample_path: "D:/Music/voces/brody/brody-normal.mp3"
       temperature: 0.6 # More controlled
-      cfg_weight: 0.70 # Higher accuracy
+      cfg_weight: 0.65 # Higher accuracy
       exaggeration: 0.40 # Less dramatic
     music:
       playlist:
-        - path: "D:/Music/finance/corporate_smooth.mp3"
-          name: "Corporate Smooth"
-        - path: "D:/Music/finance/professional_upbeat.mp3"
-          name: "Professional Upbeat"
-        - path: "D:/Music/finance/success_theme.mp3"
-          name: "Success Theme"
-      volume: 0.08 # Lower volume for professional feel
-      rotation: sequential
-
-  denzel_authority:
-    name: "Denzel - Authority Figure"
-    description: "Strong, authoritative voice for serious finance topics"
-    voice:
-      engine: chatterbox
-      sample_path: "D:/Music/voces/denzel/sample.mp3"
-      temperature: 0.7
-      cfg_weight: 0.68
-      exaggeration: 0.50
-    music:
-      playlist:
-        - path: "D:/Music/finance/power_theme.mp3"
-          name: "Power Theme"
-        - path: "D:/Music/finance/confident_jazz.mp3"
-          name: "Confident Jazz"
-      volume: 0.08
+        - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
+          name: "Billionaire Power Theme"
+        - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
+          name: "Billions Power Theme"
+        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+          name: "Run the Jewels"
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire-two.mp3"
+          name: "millionaire2"
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire.mp3"
+          name: "millionaire"
+        - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
+          name: "Yes"
+      volume: 0.12
       rotation: random
+
+  #  denzel_authority:
+  #    name: "Denzel - Authority Figure"
+  #    description: "Strong, authoritative voice for serious finance topics"
+  #    voice:
+  #      engine: chatterbox
+  #      sample_path: "D:/Music/voces/denzel/sample.mp3"
+  #      temperature: 0.7
+  #      cfg_weight: 0.68
+  #      exaggeration: 0.50
+  #    music:
+  #      playlist:
+  #        - path: "D:/Music/finance/power_theme.mp3"
+  #          name: "Power Theme"
+  #        - path: "D:/Music/finance/confident_jazz.mp3"
+  #          name: "Confident Jazz"
+  #      volume: 0.08
+  #      rotation: random
 
   frank_professional:
     name: "Frank - Young Professional Trader"
@@ -46,34 +52,24 @@ profiles:
     voice:
       engine: chatterbox
       sample_path: "D:/Music/voces/frank/Frank-Louis_pvc_sp105_s30_sb85_se50_b_m2.mp3"
-      temperature: 0.7
+      exaggeration: 0.55
       cfg_weight: 0.65
-      exaggeration: 0.6
+      temperature: 0.7
     music:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
           name: "Billionaire Power Theme"
         - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
           name: "Billions Power Theme"
-        - path: "D:/Music/tracks/10-26seconds/alone-2-emmit_fenn.wav"
-          name: "Emmit light"
         - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
           name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
-        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
-          name: "Revive"
-        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
-          name: "Ls"
-        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
-          name: "Surrender"
-        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
-          name: "FindingMe"
-        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
-          name: "EveningLand"
-      volume: 0.1
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire-two.mp3"
+          name: "millionaire2"
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire.mp3"
+          name: "millionaire"
+        - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
+          name: "Yes"
+      volume: 0.12
       rotation: random
 
   atlas_professional:
@@ -82,86 +78,76 @@ profiles:
     voice:
       engine: chatterbox
       sample_path: "D:/Music/atlas-five-exageration.wav"
-      temperature: 0.7
+      exaggeration: 0.5
       cfg_weight: 0.65
-      exaggeration: 0.55
+      temperature: 0.7
     music:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
           name: "Billionaire Power Theme"
         - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
           name: "Billions Power Theme"
-        - path: "D:/Music/tracks/10-26seconds/alone-2-emmit_fenn.wav"
-          name: "Emmit light"
         - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
           name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
-        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
-          name: "Revive"
-        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
-          name: "Ls"
-        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
-          name: "Surrender"
-        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
-          name: "FindingMe"
-        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
-          name: "EveningLand"
-      volume: 0.1
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire-two.mp3"
+          name: "millionaire2"
+        - path: "D:/Music/tracks/10-26seconds/track-millionaire.mp3"
+          name: "millionaire"
+        - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
+          name: "Yes"
+      volume: 0.12
       rotation: random
 
-  oliver_professional:
-    name: "Oliver - Young Professional Trader"
-    description: "Strong, confident almost cocky voice for serious finance topics"
-    voice:
-      engine: chatterbox
-      sample_path: "D:/Music/voces/oliver/olivers-voice.mp3"
-      temperature: 0.7
-      cfg_weight: 0.65
-      exaggeration: 0.55
-    music:
-      playlist:
-        - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
-          name: "Billionaire Power Theme"
-        - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
-          name: "Billions Power Theme"
-        - path: "D:/Music/tracks/10-26seconds/alone-2-emmit_fenn.wav"
-          name: "Emmit light"
-        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
-          name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
-        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
-          name: "Revive"
-        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
-          name: "Ls"
-        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
-          name: "Surrender"
-        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
-          name: "FindingMe"
-        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
-          name: "EveningLand"
-      volume: 0.1
-      rotation: random
+#  oliver_professional:
+#    name: "Oliver - Young Professional Trader"
+#    description: "Strong, confident almost cocky voice for serious finance topics"
+#    voice:
+#      engine: chatterbox
+#      sample_path: "D:/Music/voces/oliver/olivers-voice.mp3"
+#      exaggeration: 0.55
+#      cfg_weight: 0.65
+#      temperature: 0.7
+#    music:
+#      playlist:
+#        - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
+#          name: "Billionaire Power Theme"
+#        - path: "D:/Music/tracks/10-26seconds/track-billions-outro.mp3"
+#          name: "Billions Power Theme"
+#        - path: "D:/Music/tracks/10-26seconds/alone-2-emmit_fenn.wav"
+#          name: "Emmit light"
+#        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
+#          name: "Run the Jewels"
+#        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
+#          name: "Tunder"
+#        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
+#          name: "Simpin"
+#        - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
+#          name: "Revive"
+#        - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
+#          name: "Ls"
+#        - path: "D:/Music/tracks/10-26seconds/track-justsurrender.mp3"
+#          name: "Surrender"
+#        - path: "D:/Music/tracks/10-26seconds/track-findingme.mp3"
+#          name: "FindingMe"
+#        - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
+#          name: "EveningLand"
+#      volume: 0.12
+#      rotation: random
 
-  kokoro_neutral:
-    name: "Kokoro - Neutral Professional"
-    description: "Fast TTS without cloning, neutral professional tone"
-    voice:
-      engine: kokoro
-      temperature: 0.6
-      cfg_weight: 0.70
-      exaggeration: 0.30
-    music:
-      playlist:
-        - path: "D:/Music/finance/corporate_smooth.mp3"
-          name: "Corporate Smooth"
-      volume: 0.08
-      rotation: sequential
+#  kokoro_neutral:
+#    name: "Kokoro - Neutral Professional"
+#    description: "Fast TTS without cloning, neutral professional tone"
+#    voice:
+#      engine: kokoro
+#      temperature: 0.6
+#      cfg_weight: 0.70
+#      exaggeration: 0.30
+#    music:
+#      playlist:
+#        - path: "D:/Music/finance/corporate_smooth.mp3"
+#          name: "Corporate Smooth"
+#      volume: 0.08
+#      rotation: sequential
 
 # Default profile for this channel
 default_profile: frank_professional

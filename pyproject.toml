@@ -9,9 +9,9 @@ dependencies = [
     "google-auth>=2.35.0",
     "google-api-python-client>=2.155.0",
     "httpx>=0.28.1",
-    "pydantic>=2.10.6",
+    "pydantic>=2.0.0",
     "pydantic-settings>=2.7.1",
-    "python-dotenv>=1.0.1",
+    "python-dotenv>=1.0.0",
     "tenacity>=9.0.0",
     "rich>=13.9.4",
     "aiolimiter>=1.1.0",
@@ -19,6 +19,27 @@ dependencies = [
     "google-auth-oauthlib>=1.2.2",
     "pyyaml>=6.0.3",
     "pytz>=2024.2",
+    "chatterbox-tts",
+    "torch>=2.0.0,<2.7.0",
+    "torchaudio>=2.0.0,<2.7.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "requests>=2.28.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.2",
+    "ruff>=0.8.5",
+    "uuid>=1.30",
+    "numpy>=2.3.5",
+    "loguru>=0.7.3",
+    "matplotlib>=3.10.7",
+    "pillow>=12.0.0",
+    "faster-whisper",
+    "ctranslate2==4.6.1",
+    "youtube-transcript-api>=1.2.3",
+    "soundfile>=0.13.1",
+    "python-multipart>=0.0.20",
+    "kokoro>=0.9.4",
+    "nltk>=3.9.2",
 ]
 
 [project.optional-dependencies]
@@ -46,3 +67,12 @@ asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+[tool.uv.sources]
+chatterbox-tts = { git = "https://github.com/resemble-ai/chatterbox.git", rev = "v0.1.2" }
+faster-whisper = { url = "https://github.com/SYSTRAN/faster-whisper/archive/refs/heads/master.tar.gz" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true

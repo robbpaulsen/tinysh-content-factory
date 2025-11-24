@@ -6,7 +6,7 @@ description: "Daily financial tips and money management wisdom"
 handle: "@WealthWiisdomShorts"
 
 # Channel type
-channel_type: "ai_generated_shorts"
+channel_type: "financial_tips_shorts"
 
 # Content settings
 content:
@@ -35,7 +35,7 @@ content:
 video:
   aspect_ratio: "9:16" # Shorts vertical format
   width: 768
-  height: 1344
+  height: 1366
 
 # Scene settings
 scenes:
@@ -48,13 +48,13 @@ image:
 
 # YouTube upload settings
 youtube:
-  category_id: "27" # Education (good for finance tips)
+  category_id: "22" # People and Blogs
   made_for_kids: false
   schedule:
     videos_per_day: 3
     start_hour: 12 # 12 pm (different from momentum)
-    end_hour: 16 # 4 PM
-    interval_hours: 2
+    end_hour: 18 # 4 PM
+    interval_hours: 3
     timezone: "America/Mexico_City"
   default_tags:
     - finance
@@ -62,7 +62,6 @@ youtube:
     - personal finance
     - wealth
     - passive income
-    - shorts
     - crypto
     - high life
     - wisdom
@@ -72,17 +71,12 @@ youtube:
     - entrepreneurship
     - investing for beginners
     - business tips
-    - passive income
     - millionaire habits
-    - personal finance
     - wealth creation
     - hustle
     - motivation
-    - shorts
     - finance shorts
     - wealth wisdom
-    - mindset
-    - money
 
 # SEO settings
 seo:

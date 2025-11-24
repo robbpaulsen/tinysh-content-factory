@@ -6,14 +6,14 @@ description: "Daily motivational shorts for personal growth and self-improvement
 handle: "@MomentumMindset"
 
 # Channel type
-channel_type: "ai_generated_shorts"  # ai_generated_shorts, ai_generated_videos, youtube_compilation
+channel_type: "ai_generated_shorts" # ai_generated_shorts, ai_generated_videos, youtube_compilation
 
 # Content settings
 content:
   format: "shorts"
-  duration_range: [15, 45]  # seconds
+  duration_range: [15, 45] # seconds
   subreddit: "selfimprovement"
-  sheet_tab: "momentum_mindset"  # Google Sheets tab name for this channel
+  sheet_tab: "momentum_mindset" # Google Sheets tab name for this channel
   backup_subreddits:
     - "getdisciplined"
     - "DecidingToBeBetter"
@@ -29,29 +29,29 @@ content:
 
 # Video format
 video:
-  aspect_ratio: "9:16"  # Shorts vertical format
+  aspect_ratio: "9:16" # Shorts vertical format
   width: 768
   height: 1344
 
 # Scene settings
 scenes:
-  count_range: [3, 8]  # Number of scenes per video
+  count_range: [3, 8] # Number of scenes per video
 
 # Image generation (FLUX)
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
-  style: "cinematic, dramatic lighting, inspirational atmosphere, golden hour, professional photography"
+  style: "Create a cinematic image in a dramatic, high-contrast photographic style, with a cool blue color grading. The subject is a figure [doing something, like walking under a waterfall, sitting under a tree, watching the sunset, whatever makes sense from the content's perspective], captured from a distance. The foreground should be softly blurred to focus attention on the landscape details. The mood should convey strength, wisdom, and a sense of calm determination. The overall visual should feel inspirational and dignified, resembling a powerful nature documentary scene."
 
 # YouTube upload settings
 youtube:
-  category_id: "22"  # People & Blogs
+  category_id: "22" # People & Blogs
   made_for_kids: false
   schedule:
-    videos_per_day: 6
-    start_hour: 6   # 6 AM
-    end_hour: 16    # 4 PM
+    videos_per_day: 10
+    start_hour: 5 # 6 AM
+    end_hour: 23 # 4 PM
     interval_hours: 2
-    timezone: "America/Chicago"
+    timezone: "America/Mexico_City"
   default_tags:
     - motivation
     - shorts

@@ -29,11 +29,7 @@ console = Console()
 class WorkflowOrchestrator:
     """Orchestrates the complete YouTube Shorts generation workflow."""
 
-    def __init__(
-        self,
-        channel_config: "ChannelConfig | None" = None,
-        profile: str | None = None
-    ):
+    def __init__(self, channel_config: "ChannelConfig | None" = None, profile: str | None = None):
         """
         Initialize all services.
 
@@ -55,7 +51,9 @@ class WorkflowOrchestrator:
             # Use the profiles_path property which handles relative paths correctly
             profiles_path = self.channel_config.profiles_path
             if not profiles_path.exists():
-                logger.warning(f"Channel-specific profiles not found at {profiles_path}, using global profiles")
+                logger.warning(
+                    f"Channel-specific profiles not found at {profiles_path}, using global profiles"
+                )
                 profiles_path = settings.profiles_path
         else:
             profiles_path = settings.profiles_path
@@ -79,7 +77,7 @@ class WorkflowOrchestrator:
 
         # Initialize Google Sheets with channel-specific tab if available
         sheet_tab = None
-        if self.channel_config and hasattr(self.channel_config.config.content, 'sheet_tab'):
+        if self.channel_config and hasattr(self.channel_config.config.content, "sheet_tab"):
             sheet_tab = self.channel_config.config.content.sheet_tab
             if sheet_tab:
                 logger.info(f"Using Google Sheets tab: {sheet_tab}")
@@ -101,7 +99,9 @@ class WorkflowOrchestrator:
         await self.media.close()
 
     async def update_stories_from_reddit(
-        self, subreddit: str | None = None, limit: int = 25
+        self,
+        subreddit: str | None = None,
+        limit: int = 25,
     ) -> int:
         """
         Download stories from Reddit and save to Google Sheets.
@@ -117,7 +117,7 @@ class WorkflowOrchestrator:
 
         # Use subreddit from: 1) explicit arg, 2) channel config, 3) settings
         if not subreddit:
-            if self.channel_config and hasattr(self.channel_config.config.content, 'subreddit'):
+            if self.channel_config and hasattr(self.channel_config.config.content, "subreddit"):
                 subreddit = self.channel_config.config.content.subreddit
 
         # Fetch stories
@@ -154,48 +154,90 @@ class WorkflowOrchestrator:
                 script = await self.llm.create_complete_workflow(story.title, story.content)
             console.print(f"[green]  ✓ Script created with {len(script.scenes)} scenes[/green]")
 
-            # Step 2: Process each scene sequentially
-            scene_videos: list[GeneratedVideo] = []
+            # Step 2: Process all scenes in parallel
+            console.print(f"[cyan]  → Processing {len(script.scenes)} scenes in parallel...[/cyan]")
 
+            # Semaphore to enforce strict sequential image generation for free FLUX model
+            # The API allows only 1 concurrent request
+            image_semaphore = asyncio.Semaphore(1)
+            
+            # Semaphore to protect local server resources (RAM/VRAM)
+            # TTS and Video Encoding are heavy. Limit to 2 concurrent local tasks.
+            local_resource_semaphore = asyncio.Semaphore(2)
+
+            async def process_scene(idx: int, scene: any) -> GeneratedVideo:
+                """Process a single scene: Image (Sequential) + TTS (Parallel) -> Captioned Video."""
+                logger.info(f"Scene {idx}: Starting generation")
+
+                voice_config = self.profile_manager.get_voice_config(self.active_profile)
+
+                # Get negative prompt from channel config if available
+                negative_prompt = None
+                if self.channel_config and self.channel_config.config.image:
+                    negative_prompt = self.channel_config.config.image.negative_prompt
+
+                # OPTIMIZATION STRATEGY: Interleaved Semaphores
+                # 1. TTS (Local Resource) - Acquire local_sem, Release local_sem
+                # 2. Image (External API) - Acquire image_sem, Release image_sem (while Local is free for others)
+                # 3. Video (Local Resource) - Acquire local_sem, Release local_sem
+                
+                # 1. TTS Generation
+                async with local_resource_semaphore:
+                    logger.info(f"Scene {idx}: Generating TTS (Acquired local resource)...")
+                    tts = await self.media.generate_tts(scene.text, voice_config=voice_config)
+                    logger.info(f"Scene {idx}: TTS Complete (Released local resource)")
+
+                # 2. Image Generation
+                async with image_semaphore:
+                    logger.info(f"Scene {idx}: Generating Image (Acquired API slot)...")
+                    try:
+                        image = await self.media.generate_and_upload_image(
+                            scene.image_prompt,
+                            negative_prompt=negative_prompt
+                        )
+                    finally:
+                        # RATE LIMIT ENFORCEMENT: 6 img/min = 1 img per 10s minimum.
+                        logger.info(f"Scene {idx}: Image done. Cooling down for 12s...")
+                        await asyncio.sleep(12)
+
+                # Get subtitle config from channel settings
+                subtitle_config = None
+                if self.channel_config and self.channel_config.config.video.subtitles:
+                    subtitle_config = self.channel_config.config.video.subtitles.model_dump()
+
+                # 3. Video Generation
+                async with local_resource_semaphore:
+                    logger.info(f"Scene {idx}: Generating Video (Acquired local resource)...")
+                    video = await self.media.generate_captioned_video(
+                        image.file_id, tts.file_id, scene.text, subtitle_config=subtitle_config
+                    )
+                    logger.info(f"Scene {idx}: Video Complete (Released local resource)")
+                
+                return video
+
+            # Create tasks for all scenes
+            scene_tasks = [process_scene(idx, scene) for idx, scene in enumerate(script.scenes, 1)]
+
+            # Execute all scenes concurrently
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 console=console,
             ) as progress:
                 task = progress.add_task(
-                    f"[cyan]Processing {len(script.scenes)} scenes...", total=len(script.scenes)
+                    f"[cyan]Generating assets for {len(script.scenes)} scenes...", total=None
                 )
 
-                for idx, scene in enumerate(script.scenes, 1):
-                    progress.update(task, description=f"[cyan]Scene {idx}/{len(script.scenes)}...")
+                # Wait for all scenes to complete
+                scene_videos = await asyncio.gather(*scene_tasks)
 
-                    # OPTIMIZATION: Generate image + TTS in parallel (independent operations)
-                    # Before: image(20s) → TTS(15s) → video(8s) = 43s per scene
-                    # After: max(image(20s), TTS(15s)) → video(8s) = 28s per scene
-                    # Savings: ~15s per scene (35% faster)
-                    logger.info(f"Scene {idx}: Generating image + TTS in parallel")
-                    voice_config = self.profile_manager.get_voice_config(self.active_profile)
+                progress.update(
+                    task, completed=1, total=1, description="[green]All scenes generated![/green]"
+                )
 
-                    # Get negative prompt from channel config if available
-                    negative_prompt = None
-                    if self.channel_config and self.channel_config.config.image:
-                        negative_prompt = self.channel_config.config.image.negative_prompt
-
-                    image, tts = await asyncio.gather(
-                        self.media.generate_and_upload_image(scene.image_prompt, negative_prompt=negative_prompt),
-                        self.media.generate_tts(scene.text, voice_config=voice_config)
-                    )
-
-                    # Generate video with captions (requires both image + TTS)
-                    logger.info(f"Scene {idx}: Generating captioned video")
-                    video = await self.media.generate_captioned_video(
-                        image.file_id, tts.file_id, scene.text
-                    )
-
-                    scene_videos.append(video)
-                    progress.advance(task)
-
-            console.print(f"[green]  ✓ Generated {len(scene_videos)} scene videos[/green]")
+            console.print(
+                f"[green]  ✓ Generated {len(scene_videos)} scene videos in parallel[/green]"
+            )
 
             # Step 3: Merge all videos with profile-specific music
             console.print("[cyan]  → Merging videos...[/cyan]")
@@ -205,14 +247,17 @@ class WorkflowOrchestrator:
                 final_video_id = await self.media.merge_videos(
                     video_ids,
                     background_music_path=music_config["path"],
-                    music_volume=music_config["volume"]
+                    music_volume=music_config["volume"],
                 )
             console.print(f"[green]  ✓ Videos merged with music: {music_config['name']}[/green]")
 
             return final_video_id, script
 
     async def generate_and_save_seo_metadata(
-        self, script: VideoScript, video_id: str, output_dir: Path
+        self,
+        script: VideoScript,
+        video_id: str,
+        output_dir: Path,
     ) -> SEOMetadata | None:
         """
         Generate SEO-optimized metadata and save to JSON file.
@@ -266,12 +311,15 @@ class WorkflowOrchestrator:
 
         console.print(f"[green]  ✓ SEO metadata saved to {metadata_path.name}[/green]")
         logger.info(f"SEO Title: {metadata.title}")
-        logger.info(f"Tags: {', '.join(metadata.tags[:5])}...")
+        logger.info(f"Tags: {', '.join(metadata.tags[:5])}..." )
 
         return metadata
 
     async def upload_to_youtube(
-        self, video_id: str, script: VideoScript, output_dir: Path | None = None
+        self,
+        video_id: str,
+        script: VideoScript,
+        output_dir: Path | None = None,
     ) -> str:
         """
         Download video and upload to YouTube.
@@ -307,7 +355,11 @@ class WorkflowOrchestrator:
 
         return result.url
 
-    async def cleanup_temporary_files(self, scene_videos: list[GeneratedVideo], final_video_id: str):
+    async def cleanup_temporary_files(
+        self,
+        scene_videos: list[GeneratedVideo],
+        final_video_id: str,
+    ):
         """
         Clean up temporary files from media server.
 
@@ -396,7 +448,9 @@ class WorkflowOrchestrator:
                 console.print(f"[green]✓ Updated Google Sheets row {story.row_number}[/green]")
 
                 console.print(f"\n[bold green]🎉 Video complete: {video_path}[/bold green]\n")
-                console.print(f"[yellow]ℹ YouTube upload disabled - upload manually when ready[/yellow]\n")
+                console.print(
+                    f"[yellow]ℹ YouTube upload disabled - upload manually when ready[/yellow]\n"
+                )
 
             console.print("\n[bold magenta]✨ Workflow completed successfully![/bold magenta]\n")
 
@@ -458,12 +512,15 @@ class WorkflowOrchestrator:
             # youtube_url = await self.upload_to_youtube(final_video_id, script)
 
             console.print(f"\n[bold green]🎉 Video complete: {video_path}[/bold green]\n")
-            console.print(f"[yellow]ℹ YouTube upload disabled - upload manually when ready[/yellow]\n")
+            console.print(
+                f"[yellow]ℹ YouTube upload disabled - upload manually when ready[/yellow]\n"
+            )
 
         except Exception as e:
             logger.exception("Single story workflow failed")
             console.print(f"\n[bold red]❌ Error: {e}[/bold red]\n")
             raise
+
     async def schedule_batch_upload(
         self,
         start_date: datetime | None = None,
@@ -563,7 +620,9 @@ class WorkflowOrchestrator:
                 try:
                     # Load metadata if exists
                     metadata_file = video_file.with_suffix("").with_suffix(".json").name
-                    metadata_path = output_dir / f"{metadata_file.replace('.mp4', '')}_metadata.json"
+                    metadata_path = (
+                        output_dir / f"{metadata_file.replace('.mp4', '')}_metadata.json"
+                    )
 
                     title = None
                     description = None
@@ -581,7 +640,9 @@ class WorkflowOrchestrator:
                     # Fallback to defaults if metadata not found
                     if not title:
                         title = f"Motivational Short {i}"
-                        logger.warning(f"No metadata found for {video_file.name}, using default title")
+                        logger.warning(
+                            f"No metadata found for {video_file.name}, using default title"
+                        )
 
                     if not description:
                         description = "An inspiring motivational message. #motivation #shorts"
@@ -616,7 +677,9 @@ class WorkflowOrchestrator:
                 progress.advance(task)
 
         console.print(f"\n[bold green]🎉 Batch upload complete![/bold green]")
-        console.print(f"Uploaded: {len([r for r in results if not r[2].startswith('ERROR')])} videos")
+        console.print(
+            f"Uploaded: {len([r for r in results if not r[2].startswith('ERROR')])} videos"
+        )
         console.print(f"Failed: {len([r for r in results if r[2].startswith('ERROR')])} videos\n")
 
         return results

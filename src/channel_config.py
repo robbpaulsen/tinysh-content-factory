@@ -23,12 +23,30 @@ class ContentSettings(BaseModel):
     compilation_type: str | None = None
 
 
+class SubtitleSettings(BaseModel):
+    """Subtitle styling configuration."""
+
+    font: str = "Arial"
+    font_size: int = 18
+    color: str = "#FFFF00"  # Yellow (Hex format)
+    outline_color: str = "#000000"  # Black
+    outline_width: int = 3
+    shadow: int = 0
+    alignment: int = 2  # Bottom Center
+    margin_v: int = 40
+    bg_color: str | None = None  # Optional background box color (e.g., #00000080)
+    max_lines: int = 1  # Lines per segment (1 = faster pace)
+    max_length: int = 20  # Max chars per line (lower = faster changes)
+    bold: bool = True # Force bold font
+
+
 class VideoSettings(BaseModel):
     """Video format settings."""
 
     aspect_ratio: str  # 9:16, 16:9
     width: int
     height: int
+    subtitles: SubtitleSettings | None = None  # Optional styling
 
 
 class SceneSettings(BaseModel):

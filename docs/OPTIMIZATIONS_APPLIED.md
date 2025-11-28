@@ -1,256 +1,61 @@
-# Optimizaciones Aplicadas - 2025-11-05
+# Workflow Optimizations & Performance
 
-## 🎯 Objetivo
-Optimizar el workflow de generación de YouTube Shorts reduciendo tiempo de procesamiento de ~7min a ~4min.
+This document details the technical optimizations applied to the content generation workflow to balance speed, resource usage, and API constraints.
 
----
+## Core Strategy: Semi-Parallel Processing
 
-## ✅ Optimizaciones Implementadas
+The workflow has been re-engineered from a purely sequential model to a hybrid **Semi-Parallel** model. This allows us to maximize the throughput of the local media server while strictly adhering to the rate limits of external APIs (specifically Together.ai's free tier).
 
-### 1. FFmpeg GPU Encoding (NVENC) ⚡ **MAYOR IMPACTO**
+### 1. Parallel TTS Generation (Local Server)
+**Constraint:** None (Local resources).
+**Optimization:**
+Audio generation for *all* scenes in a script is launched simultaneously at the start of the process.
+-   **Mechanism**: `asyncio.create_task()` is used to fire-and-forget the TTS requests to the local media server.
+-   **Benefit**: The total time for TTS is reduced from `sum(scene_duration)` to `max(scene_duration)`.
 
-**Archivo**: `workflow_youtube_shorts/builder-version-mas-nueva.py` líneas 279-291
+### 2. Sequential Image Generation (External API)
+**Constraint:** Together.ai / FLUX.1-schnell-Free model allows **max 1 concurrent request**.
+**Optimization:**
+Image generation is protected by a Semaphore to ensure strict serialization.
+-   **Mechanism**: `asyncio.Semaphore(1)` wraps the `generate_and_upload_image` call.
+-   **Behavior**: Although all scenes "start" at once, they queue up for image generation. As soon as Scene 1 finishes its image, Scene 2 begins.
+-   **Benefit**: Prevents `429 Too Many Requests` errors while keeping the pipeline active.
 
-**Antes:**
-```python
-cmd.extend(["-c:v", "libx264", "-preset", "ultrafast"])
-cmd.extend(["-crf", "23", "-pix_fmt", "yuv420p"])
-cmd.extend(["-c:a", "aac", "-b:a", "192k"])
+### 3. Pipelined Video Assembly
+**Constraint:** Requires both Image and TTS to be ready.
+**Optimization:**
+Video generation starts immediately for a scene as soon as its dependencies are met.
+-   **Mechanism**: `await asyncio.gather()` inside the scene processing function.
+-   **Behavior**:
+    -   Scene 1 gets Image + Audio -> Starts Video Generation.
+    -   While Scene 1 is generating video (local FFmpeg), Scene 2 acquires the semaphore and starts generating its image.
+-   **Benefit**: Overlaps local CPU/GPU video rendering time with external API latency.
+
+## Comparative Timeline
+
+### Old Sequential Model
+```
+[Scene 1 Image] -> [Scene 1 TTS] -> [Scene 1 Video] -> [Scene 2 Image] ...
+|-----20s-----|    |----15s----|    |-----10s-----|    |-----20s-----|
+Total for 2 scenes: ~90s
 ```
 
-**Después:**
-```python
-# NVENC GPU encoding (usa 12GB VRAM disponibles)
-cmd.extend(["-c:v", "h264_nvenc"])
-cmd.extend(["-preset", "p4"])           # balanced quality/speed
-cmd.extend(["-tune", "hq"])             # high quality mode
-cmd.extend(["-rc", "vbr"])              # variable bitrate
-cmd.extend(["-cq", "23"])               # quality level
-cmd.extend(["-b:v", "5M"])              # target bitrate
-cmd.extend(["-maxrate", "8M"])          # max bitrate
-cmd.extend(["-bufsize", "10M"])         # buffer size
-cmd.extend(["-spatial-aq", "1"])        # spatial AQ
-cmd.extend(["-temporal-aq", "1"])       # temporal AQ
-cmd.extend(["-pix_fmt", "yuv420p"])
-cmd.extend(["-c:a", "aac", "-b:a", "128k"])  # reduced audio bitrate
+### Optimized Semi-Parallel Model
+```
+[All TTS Tasks Start] -----------------------------> (Done in ~15s total)
+[Scene 1 Image] -> [Scene 2 Image] -> [Scene 3 Image] ...
+|-----20s-----|    |-----20s-----|
+                   [Scene 1 Video] (Starts immediately after Img 1 + TTS)
+                   |-----10s-----|
+                                      [Scene 2 Video]
+                                      |-----10s-----|
+Total for 2 scenes: ~50s (Limited by sequential image generation)
 ```
 
-**Impacto Estimado**:
-- 5-10x más rápido en encoding de video
-- 8 escenas × 3s encoding = 24s → ~4-5s con GPU
-- **Ahorro: ~20 segundos por video**
+## Negative Prompt Integration
 
-**Hardware**: Nvidia GPU con 12GB VRAM
+To improve image quality without slowing down the pipeline, we implemented native support for `negative_prompt` in the Together.ai API payload.
 
----
-
-### 2. Gemini Prompts con Límites de Duración 📝
-
-**Archivo**: `src/services/llm.py`
-
-**Cambios**:
-
-#### a) Prompt de generación de speech (líneas 67-86):
-```python
-Instructions:
-- TARGET LENGTH: 15-45 seconds when spoken (480-1440 tokens)
-- For YouTube Shorts: Keep between 15s minimum and 45s maximum
-- IMPORTANT: Stay within 480-1440 tokens (15-45 seconds).
-  Gemini measures 32 tokens = 1 second of speech.
-```
-
-#### b) Prompt de creación de script (líneas 128-154):
-```python
-DURATION REQUIREMENTS:
-- Total video: 15-45 seconds (Shorts format)
-- Each scene: 2-6 seconds of speech
-- Total speech should match motivational text length
-- Gemini token count: 32 tokens = 1 second
-```
-
-**Impacto Estimado**:
-- Videos más cortos y enfocados (Shorts óptimo: 15-45s)
-- Menos escenas → menos TTS → menos encoding
-- TTS más rápido con textos más cortos
-- **Ahorro: Variable, ~30-60s dependiendo de contenido original**
-
-**Basado en documentación Gemini**: 32 tokens = 1 segundo de audio/video
-
----
-
-### 3. Revertir Paralelización de Imágenes (Cleanup) 🧹
-
-**Archivos Modificados**:
-- `src/workflow.py` - Removidas funciones `_generate_videos_parallel()` y `_generate_videos_sequential()`
-- `src/config.py` - Removidos parámetros `parallel_image_*`
-- `.env.example` - Removida configuración de paralelización
-
-**Razón**:
-- Together.ai FLUX-Free solo acepta 1 imagen a la vez (secuencial)
-- Rate limit: ~5-6 imágenes/minuto, exceder = 15 min bloqueo + regenerar API key
-- La paralelización causaba HTTP 429 errors
-
-**Resultado**:
-- Código más limpio y simple
-- Evita errores de rate limiting
-- Generación de imágenes ya es rápida (5-6s cada una)
-
----
-
-## 📊 Impacto Total Estimado
-
-### Tiempos Antes (8 escenas):
-```
-Script generation (Gemini):    5s
-Image generation (FLUX):      40s  (8 × 5s)
-TTS generation (Kokoro):     144s  (8 × 18s)
-Video encoding (libx264):     24s  (8 × 3s)
-Merge:                         5s
-─────────────────────────────────
-Total:                      ~218s (~3.6 min)
-```
-
-### Tiempos Después (estimado con 6 escenas por optimización de Gemini):
-```
-Script generation (Gemini):    5s
-Image generation (FLUX):      30s  (6 × 5s)
-TTS generation (Kokoro):     108s  (6 × 18s)
-Video encoding (NVENC):        5s  (6 × 0.8s) ⚡ 5-10x faster
-Merge:                         5s
-─────────────────────────────────
-Total:                      ~153s (~2.5 min)
-```
-
-**Mejora total: ~65 segundos (~30% más rápido)**
-
-Desglose:
-- NVENC GPU: ~20s ahorro
-- Gemini optimizado (menos escenas): ~45s ahorro combinado
-
----
-
-## 🔧 Nota sobre Merge Optimization
-
-La optimización de merge con `-c copy` (sin re-encoding) **NO** se implementó porque:
-- Requiere modificar `video/media.py` del media server
-- Ese archivo no está disponible en este repositorio
-- Es parte del server backend, no del cliente Python
-
-**Para implementar** (en media server):
-```python
-# Si todos los videos tienen mismo codec:
-ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
-
-# Si hay música de fondo:
-ffmpeg -f concat -safe 0 -i filelist.txt \
-  -i music.mp3 \
-  -c:v copy \  # NO re-encode video
-  -c:a aac -b:a 128k \  # Solo re-encode audio
-  -filter_complex "[0:a][1:a]amix=inputs=2" \
-  output.mp4
-```
-
-**Ahorro adicional estimado**: 5s → 1s en merge
-
----
-
-## 🧪 Testing
-
-### Verificar NVENC disponible:
-```bash
-ffmpeg -encoders | grep nvenc
-```
-
-Debería mostrar:
-```
-h264_nvenc          Nvidia NVENC H.264 encoder
-hevc_nvenc          Nvidia NVENC H.265/HEVC encoder
-```
-
-### Si NVENC no está disponible:
-El comando fallará. Para agregar fallback automático, modificar `builder.py`:
-
-```python
-# Intentar NVENC primero
-try:
-    cmd.extend(["-c:v", "h264_nvenc", ...])
-    # ejecutar comando
-except:
-    # Fallback a x264 CPU
-    cmd.extend(["-c:v", "libx264", "-preset", "medium", "-threads", "6"])
-```
-
-### Test completo:
-```bash
-uv run python -m src.main generate --count 1
-```
-
-**Indicadores de éxito**:
-- Videos más cortos (15-45s)
-- Encoding de video significativamente más rápido
-- Menos escenas generadas por Gemini
-- Tiempo total ~2.5-3 min vs ~3.6-4 min antes
-
----
-
-## 📁 Archivos Modificados
-
-### Cliente Python (este repositorio):
-1. `src/workflow.py` - Revertida paralelización
-2. `src/config.py` - Removida config de paralelización
-3. `.env.example` - Limpieza de configuración
-4. `src/services/llm.py` - Optimización de prompts Gemini
-
-### Media Server (workflow_youtube_shorts/):
-5. `workflow_youtube_shorts/builder-version-mas-nueva.py` - NVENC GPU encoding
-
----
-
-## ⚠️ Consideraciones
-
-### 1. Hardware Requirements
-- **GPU Nvidia con NVENC** (12GB VRAM disponibles)
-- Si no hay GPU: fallará el encoding
-- **Solución**: Agregar detección y fallback a x264
-
-### 2. Gemini Token Limits
-- Prompts ahora fuerzan 15-45s de duración
-- Videos muy cortos (<15s) pueden no ser ideales
-- Videos muy largos (>45s) serán truncados por Gemini
-- **Ajustar según necesidad** editando límites en `llm.py`
-
-### 3. Together.ai Rate Limits
-- FLUX-Free: 1 imagen a la vez, ~5-6/min máximo
-- Exceder = 15 min bloqueo + regenerar API key
-- Mantener generación secuencial
-
----
-
-## 🚀 Próximos Pasos (Opcionales)
-
-### 1. Agregar GPU Detection y Fallback
-```python
-def detect_nvenc():
-    result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True)
-    return b"h264_nvenc" in result.stdout
-
-if detect_nvenc():
-    # usar NVENC
-else:
-    # usar x264 optimizado
-```
-
-### 2. Optimizar Merge en Media Server
-Implementar `-c copy` para merge sin re-encoding
-
-### 3. Chatterbox TTS Optimization
-Investigar formas de acelerar generación de audio (actualmente ~18s por escena)
-
-### 4. Parallel Video Encoding (Experimental)
-Con NVENC, posible generar 2 videos simultáneamente (12GB VRAM lo permite)
-
----
-
-**Fecha**: 2025-11-05
-**Progreso**: 95% → 98%
-**Estado**: Listo para testing
+-   **Previous Approach**: Appending "Avoid deformed hands" to the main prompt. (Ineffective for FLUX).
+-   **New Approach**: Passing `"negative_prompt": "..."` in the JSON body.
+-   **Result**: Higher yield of usable images, reducing the need for regeneration.

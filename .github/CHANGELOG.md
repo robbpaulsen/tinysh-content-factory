@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **Enhanced Smart Schedule Gap Filling**: The scheduling logic (`VideoScheduler.calculate_next_available_slot`) has been improved to more effectively identify and fill available time slots. It now prioritizes finding the earliest possible publish time, including filling gaps in *today's* schedule from the current moment, before moving to subsequent days. This ensures optimal utilization of configured daily publish windows.
+### Performance & Workflow
+- **Semi-Parallel Workflow Optimization**: Re-engineered the video generation pipeline to maximize speed while respecting strict API limits.
+  - **Parallel TTS**: All audio generation for a video's scenes now happens simultaneously at the start (utilizing local server capacity).
+  - **Sequential Imaging**: Image generation logic now uses a `Semaphore(1)` to enforce strictly sequential requests to Together.ai/FLUX, preventing 429 Rate Limit errors on free tiers.
+  - **Parallel Video Assembly**: Video clips are generated as soon as their respective image and audio are ready, overlapping with subsequent image generation.
+  - **Result**: Significant reduction in total generation time compared to the previous fully sequential approach.
+
+### Added
+- **Native Negative Prompt Support**: Updated `MediaService` to use the `negative_prompt` parameter in the Together.ai API payload instead of appending text to the positive prompt. This ensures constraints (e.g., "deformed hands", "text") are properly respected by the FLUX model.
+
+### Fixed
+- **Scheduling Logic Improvements**:
+  - **Gap Filling Strategy**: The scheduler now scans the next 30 days to find the *first* available slot, prioritizing gaps in the *current day* before moving to tomorrow.
+  - **Timezone Awareness**: `batch-schedule` now correctly initializes the scheduler with the channel-specific timezone defined in `channel.yaml`.
+  - **Category ID Enforcement**: Fixed an issue where AI-generated metadata (often incorrectly guessing "Education") would override the channel's configured category (e.g., "People & Blogs"). The system now prioritizes the `channel.yaml` setting.
+  - **YouTube API Usage**: Fixed `get_scheduled_videos` to correctly fetch the channel's upload playlist instead of using the unsupported `mine=True` parameter in `videos().list`.
 
 ## [0.3.0] - 2025-11-13
 

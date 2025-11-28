@@ -36,6 +36,18 @@ video:
   aspect_ratio: "9:16" # Shorts vertical format
   width: 768
   height: 1366
+  subtitles:
+    font: "DejaVu Sans"
+    font_size: 70
+    bold: true
+    color: "#FFFF00" # Yellow
+    outline_color: "#000000"
+    outline_width: 5
+    bg_color: "#00000080" # Semi-transparent black box
+    margin_v: 0
+    alignment: 10 # Center of screen
+    max_lines: 1 # Speed reading mode
+    max_length: 15 # Short phrases for retention
 
 # Scene settings
 scenes:

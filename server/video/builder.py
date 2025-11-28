@@ -67,6 +67,7 @@ class VideoBuilder:
         """
         self.captions = {
             "file": file_path,
+            "style": (config or {}).get("style", {}),
             **(config or {}),
         }
         return self
@@ -266,8 +267,35 @@ class VideoBuilder:
         # Add subtitles or caption images if provided
         if self.captions:
             subtitle_file = self.captions.get("file")
+            style = self.captions.get("style", {})
+            
             if subtitle_file:
-                filter_parts.append(f"{current_video}subtitles={subtitle_file}[v]")
+                # Prepare force_style string for better visuals
+                # Defaults: Arial, Size 18, Yellow (&H00FFFF), Black Outline
+                style_parts = [
+                    f"FontName={style.get('font', 'Arial')}",
+                    f"FontSize={style.get('font_size', 18)}",
+                    f"PrimaryColour={style.get('color', '&H00FFFF')}",
+                    f"OutlineColour={style.get('outline_color', '&H000000')}",
+                    f"BorderStyle={style.get('border_style', 3)}", # 3=Outline
+                    f"Outline={style.get('outline_width', 3)}",
+                    f"Shadow={style.get('shadow', 0)}",
+                    f"Alignment={style.get('alignment', 2)}", # 2=Bottom Center
+                    f"MarginV={style.get('margin_v', 40)}"
+                ]
+                
+                # Add background box support if requested
+                if style.get("bg_color"):
+                     style_parts.append(f"BorderStyle=4") # 4=Box
+                     style_parts.append(f"BackColour={style.get('bg_color')}")
+                
+                force_style = ",".join(style_parts)
+                
+                # Escape path for filter - Windows paths need careful escaping
+                # Use forward slashes and escape colons (C\:/path)
+                safe_path = subtitle_file.replace("\\", "/").replace(":", "\\:")
+                
+                filter_parts.append(f"{current_video}subtitles='{safe_path}':force_style='{force_style}'[v]")
                 current_video = "[v]"
         else:
             # Rename final video output

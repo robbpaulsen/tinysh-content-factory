@@ -25,7 +25,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.17
+      volume: 0.145
       rotation: random
 
   #  denzel_authority:
@@ -69,7 +69,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.17
+      volume: 0.145
       rotation: random
 
   atlas_professional:
@@ -80,7 +80,7 @@ profiles:
       sample_path: "D:/Music/atlas-five-exageration.wav"
       exaggeration: 0.5
       cfg_weight: 0.65
-      temperature: 0.7
+      temperature: 0.65
     music:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track-billions-intro.mp3"
@@ -95,7 +95,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.17
+      volume: 0.145
       rotation: random
 
 #  oliver_professional:

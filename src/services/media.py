@@ -103,21 +103,12 @@ class MediaService:
 
         Args:
             prompt: Image generation prompt
-            negative_prompt: Negative prompt (converted to positive guidance for FLUX)
+            negative_prompt: Negative prompt (passed as separate parameter)
 
         Returns:
             Image URL from Together.ai
         """
-        # Convert negative prompt to positive guidance (FLUX doesn't support negative_prompt parameter)
-        if negative_prompt:
-            # Convert negative terms to positive anatomical correctness guidance
-            positive_guidance = ", anatomically correct hands with five fingers each, realistic human proportions, well-formed facial features, natural teeth and lips, normal eyes with proper iris and pupils"
-            final_prompt = f"{prompt}{positive_guidance}"
-            logger.info(f"Applied anatomical correctness guidance from NEGATIVE_PROMPT")
-        else:
-            final_prompt = prompt
-
-        logger.info(f"Generating image with Together.ai: {final_prompt[:100]}...")
+        logger.info(f"Generating image with Together.ai: {prompt[:100]}...")
 
         url = "https://api.together.xyz/v1/images/generations"
         headers = {
@@ -126,11 +117,17 @@ class MediaService:
         }
         payload = {
             "model": settings.flux_model,
-            "prompt": final_prompt,
+            "prompt": prompt,
             "width": settings.image_width,
             "height": settings.image_height,
             "steps": 4,  # FLUX Schnell uses 4 steps
         }
+        
+        # Add negative_prompt parameter if provided
+        # Confirmed: Together API supports negative_prompt for FLUX models
+        if negative_prompt:
+            payload["negative_prompt"] = negative_prompt
+            logger.info("Applied negative_prompt to request payload")
 
         # Apply rate limiting: 6 images per minute
         async with self.flux_limiter:
@@ -371,7 +368,7 @@ class MediaService:
         reraise=True,
     )
     async def start_captioned_video_generation(
-        self, image_id: str, tts_id: str, text: str
+        self, image_id: str, tts_id: str, text: str, subtitle_config: dict | None = None
     ) -> str:
         """
         Start generating video with captions.
@@ -380,6 +377,7 @@ class MediaService:
             image_id: Background image file_id
             tts_id: TTS audio file_id
             text: Text for captions
+            subtitle_config: Optional subtitle styling configuration
 
         Returns:
             file_id (synchronous response)
@@ -394,6 +392,48 @@ class MediaService:
             "width": (None, str(settings.image_width)),
             "height": (None, str(settings.image_height)),
         }
+        
+        # Map subtitle config to server parameters
+        if subtitle_config:
+            if subtitle_config.get("font"):
+                files["caption_config_font_name"] = (None, subtitle_config["font"])
+            
+            if subtitle_config.get("font_size"):
+                files["caption_config_font_size"] = (None, str(subtitle_config["font_size"]))
+                
+            if subtitle_config.get("bold") is not None:
+                # Convert bool to string "true"/"false" for form data, or let requests handle it if it accepts bools. 
+                # Safest is string.
+                files["caption_config_font_bold"] = (None, str(subtitle_config["bold"]).lower())
+                
+            if subtitle_config.get("color"):
+                files["caption_config_font_color"] = (None, subtitle_config["color"])
+                
+            if subtitle_config.get("outline_color"):
+                files["caption_config_stroke_color"] = (None, subtitle_config["outline_color"])
+                
+            if subtitle_config.get("outline_width"):
+                files["caption_config_stroke_size"] = (None, str(subtitle_config["outline_width"]))
+                
+            if subtitle_config.get("shadow") is not None:
+                files["caption_config_shadow_blur"] = (None, str(subtitle_config["shadow"]))
+            
+            if subtitle_config.get("max_lines"):
+                files["caption_config_line_count"] = (None, str(subtitle_config["max_lines"]))
+                
+            if subtitle_config.get("max_length"):
+                files["caption_config_line_max_length"] = (None, str(subtitle_config["max_length"]))
+            
+            # Map alignment int to string
+            align = subtitle_config.get("alignment", 2)
+            if align == 2:
+                files["caption_config_subtitle_position"] = (None, "bottom")
+            elif align == 5:
+                files["caption_config_subtitle_position"] = (None, "top")
+            elif align == 10:
+                files["caption_config_subtitle_position"] = (None, "center")
+            else:
+                files["caption_config_subtitle_position"] = (None, "bottom")
 
         response = await self.client.post(
             f"{self.base_url}/api/v1/media/video-tools/generate/tts-captioned-video",
@@ -417,7 +457,7 @@ class MediaService:
         return file_id
 
     async def generate_captioned_video(
-        self, image_id: str, tts_id: str, text: str
+        self, image_id: str, tts_id: str, text: str, subtitle_config: dict | None = None
     ) -> GeneratedVideo:
         """
         Generate video with captions (synchronous operation).
@@ -426,11 +466,12 @@ class MediaService:
             image_id: Background image file_id
             tts_id: TTS audio file_id
             text: Text for captions
+            subtitle_config: Optional subtitle styling configuration
 
         Returns:
             GeneratedVideo with file_id
         """
-        file_id = await self.start_captioned_video_generation(image_id, tts_id, text)
+        file_id = await self.start_captioned_video_generation(image_id, tts_id, text, subtitle_config)
         return GeneratedVideo(file_id=file_id, tts_id=tts_id, image_id=image_id)
 
     @retry(

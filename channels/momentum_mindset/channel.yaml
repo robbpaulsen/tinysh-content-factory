@@ -3,7 +3,7 @@
 
 name: "Momentum Mindset"
 description: "Daily motivational shorts for personal growth and self-improvement"
-handle: "@MomentumMindset"
+handle: "@MommentumMindset"
 
 # Channel type
 channel_type: "ai_generated_shorts" # ai_generated_shorts, ai_generated_videos, youtube_compilation
@@ -31,7 +31,7 @@ content:
 video:
   aspect_ratio: "9:16" # Shorts vertical format
   width: 768
-  height: 1344
+  height: 1366
 
 # Scene settings
 scenes:
@@ -48,10 +48,10 @@ youtube:
   category_id: "22" # People & Blogs
   made_for_kids: false
   schedule:
-    videos_per_day: 10
-    start_hour: 5 # 6 AM
-    end_hour: 23 # 4 PM
-    interval_hours: 2
+    videos_per_day: 4
+    start_hour: 6 # 6 AM
+    end_hour: 18 # 4 PM
+    interval_hours: 4
     timezone: "America/Mexico_City"
   default_tags:
     - motivation
@@ -64,7 +64,7 @@ youtube:
 # SEO settings
 seo:
   enabled: true
-  channel_name: "MomentumMindset"
+  channel_name: "MommentumMindset"
   target_audience: "people seeking personal growth and motivation"
   primary_keywords:
     - motivation

@@ -11,7 +11,7 @@
 profiles:
   # Brody - Calm & Reflective
   atlas_motivational:
-    name: "Atlas - First Born"
+    name: "Atlas - Motivational"
     description: "Deep, interesting voice, he wears zen and gives aways knowledge"
 
     voice:
@@ -31,12 +31,6 @@ profiles:
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
-          name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
         - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
           name: "Revive"
         - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
@@ -47,7 +41,7 @@ profiles:
           name: "FindingMe"
         - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
           name: "EveningLand"
-      volume: 0.12
+      volume: 0.145
       rotation: random
 
   # Frank - Motivational Energy
@@ -73,12 +67,6 @@ profiles:
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
-          name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
         - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
           name: "Revive"
         - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
@@ -89,12 +77,12 @@ profiles:
           name: "FindingMe"
         - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
           name: "EveningLand"
-      volume: 0.1 # 0.0-1.0, background music volume
+      volume: 0.145 # 0.0-1.0, background music volume
       rotation: random # Options: random, sequential
 
   # Brody - Calm & Reflective
-  brody_calm:
-    name: "Brody - Calm"
+  brody_motivational:
+    name: "Brody - Motivational"
     description: "Calm, reflective tone for contemplative content"
 
     voice:
@@ -114,12 +102,6 @@ profiles:
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
-          name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
         - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
           name: "Revive"
         - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
@@ -130,12 +112,12 @@ profiles:
           name: "FindingMe"
         - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
           name: "EveningLand"
-      volume: 0.12
+      volume: 0.145
       rotation: random
 
   # Denzel - Powerful Authority
-  denzel_powerful:
-    name: "Denzel - Powerful"
+  denzel_motivational:
+    name: "Denzel - Motivational"
     description: "Strong, authoritative tone for impactful messages"
 
     voice:
@@ -149,7 +131,7 @@ profiles:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/track-Motivational-background.mp3"
           name: "Motivational - Background"
-      volume: 0.12
+      volume: 0.145
       rotation: random
 
   # Real - David
@@ -174,12 +156,6 @@ profiles:
           name: "Down the Rabbit Hole"
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-        - path: "D:/Music/tracks/10-26seconds/track-run_the_jewels.mp3"
-          name: "Run the Jewels"
-        - path: "D:/Music/tracks/10-26seconds/track-thunder.mp3"
-          name: "Tunder"
-        - path: "D:/Music/tracks/10-26seconds/track-simpin.mp3"
-          name: "Simpin"
         - path: "D:/Music/tracks/10-26seconds/track-revive-thelight.mp3"
           name: "Revive"
         - path: "D:/Music/tracks/10-26seconds/track-ls.mp3"
@@ -190,7 +166,7 @@ profiles:
           name: "FindingMe"
         - path: "D:/Music/tracks/10-26seconds/track-eveningland.mp3"
           name: "EveningLand"
-      volume: 0.12
+      volume: 0.145
       rotation: random
 
   # Kokoro Example - Fast & Simple
@@ -207,15 +183,15 @@ profiles:
       playlist:
         - path: "D:/Music/tracks/10-26seconds/Track-Boundless-Worship.mp3"
           name: "Boundless Worship"
-      volume: 0.1
+      volume: 0.145
       rotation: random
 
 # Default profile to use when --profile flag is not specified
-#default_profile: frank_motivational
+default_profile: frank_motivational
 
 # Music rotation state (auto-managed, do not edit manually)
 rotation_state:
   frank_motivational: 0
-  brody_calm: 0
-  denzel_powerful: 0
+  brody_motivational: 0
+  denzel_motivational: 0
   kokoro_bella: 0

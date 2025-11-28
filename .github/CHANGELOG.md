@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Enhanced Smart Schedule Gap Filling**: The scheduling logic (`VideoScheduler.calculate_next_available_slot`) has been improved to more effectively identify and fill available time slots. It now prioritizes finding the earliest possible publish time, including filling gaps in *today's* schedule from the current moment, before moving to subsequent days. This ensures optimal utilization of configured daily publish windows.
+
 ## [0.3.0] - 2025-11-13
 
 ### Added

@@ -25,7 +25,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.12
+      volume: 0.17
       rotation: random
 
   #  denzel_authority:
@@ -69,7 +69,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.12
+      volume: 0.17
       rotation: random
 
   atlas_professional:
@@ -95,7 +95,7 @@ profiles:
           name: "millionaire"
         - path: "D:/Music/tracks/10-26seconds/track-yes.mp3"
           name: "Yes"
-      volume: 0.12
+      volume: 0.17
       rotation: random
 
 #  oliver_professional:

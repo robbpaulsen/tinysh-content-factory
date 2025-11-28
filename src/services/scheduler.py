@@ -82,25 +82,44 @@ class VideoScheduler:
 
         Args:
             video_count: Number of videos to schedule
-            start_date: Start date (default: tomorrow at start_hour in configured timezone)
+            start_date: Start date (default: earliest available slot starting today)
 
         Returns:
             List of datetime objects in UTC for each video publish time
-
-        Example:
-            With defaults (6 AM, 4 PM, 2h interval):
-            - Day 1: 6 AM, 8 AM, 10 AM, 12 PM, 2 PM, 4 PM (6 videos)
-            - Day 2: 6 AM, 8 AM, 10 AM, 12 PM, 2 PM, 4 PM (6 videos)
-            - And so on...
         """
         if video_count <= 0:
             return []
 
-        # Default start: tomorrow at start_hour in configured timezone
+        # Default start: calculate earliest possible slot from now
         if start_date is None:
             now_local = datetime.now(self.timezone)
-            tomorrow = now_local + timedelta(days=1)
-            start_date = tomorrow.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            
+            # If current time is before start_hour today, start today at start_hour
+            if now_local.hour < self.start_hour:
+                start_date = now_local.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            
+            # If current time is past end_hour today, start tomorrow at start_hour
+            elif now_local.hour >= self.end_hour:
+                start_date = (now_local + timedelta(days=1)).replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            
+            # If current time is within the window, find next interval slot
+            else:
+                # Find next slot that respects interval
+                # E.g., if start=6, interval=2, now=9:30 -> next is 10:00
+                # E.g., if start=6, interval=2, now=10:30 -> next is 12:00
+                
+                # Calculate hours since start_hour
+                hours_since_start = now_local.hour - self.start_hour
+                intervals_passed = hours_since_start // self.interval_hours
+                
+                next_interval_hour = self.start_hour + ((intervals_passed + 1) * self.interval_hours)
+                
+                if next_interval_hour <= self.end_hour:
+                    start_date = now_local.replace(hour=next_interval_hour, minute=0, second=0, microsecond=0)
+                else:
+                    # No more slots today, start tomorrow
+                    start_date = (now_local + timedelta(days=1)).replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+
         elif start_date.tzinfo is None:
             # If naive datetime, localize to configured timezone
             start_date = self.timezone.localize(start_date)
@@ -108,35 +127,37 @@ class VideoScheduler:
             # If aware datetime, convert to configured timezone
             start_date = start_date.astimezone(self.timezone)
 
-        # Ensure start time is at start_hour
+        # Ensure start time is valid
         if start_date.hour < self.start_hour:
             start_date = start_date.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
         elif start_date.hour > self.end_hour:
             # If after end hour, move to next day
             start_date = start_date + timedelta(days=1)
             start_date = start_date.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+        
+        # Adjust minute/second to 0
+        start_date = start_date.replace(minute=0, second=0, microsecond=0)
 
         schedule = []
         current_date = start_date
 
         for i in range(video_count):
-            # Calculate slot within the day (0 to slots_per_day-1)
-            slot_in_day = i % self.slots_per_day
-
-            if i > 0 and slot_in_day == 0:
-                # Move to next day, reset to start_hour
+            # Calculate slot within the day
+            # We can't just use i % slots_per_day because we might start in the middle of the day
+            
+            # If current time exceeds end_hour, move to next day
+            if current_date.hour > self.end_hour:
                 current_date = current_date + timedelta(days=1)
                 current_date = current_date.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
-
-            # Calculate hour for this slot
-            publish_hour = self.start_hour + (slot_in_day * self.interval_hours)
-            publish_time = current_date.replace(hour=publish_hour, minute=0, second=0, microsecond=0)
-
-            # Convert to UTC for YouTube API
-            publish_time_utc = publish_time.astimezone(pytz.UTC)
+            
+            # Add to schedule
+            publish_time_utc = current_date.astimezone(pytz.UTC)
             schedule.append(publish_time_utc)
+            
+            # Calculate next slot
+            current_date = current_date + timedelta(hours=self.interval_hours)
 
-        logger.info(f"Generated schedule for {video_count} videos over {(video_count // self.slots_per_day) + 1} days")
+        logger.info(f"Generated schedule for {video_count} videos")
         logger.debug(f"First publish: {schedule[0].strftime('%Y-%m-%d %H:%M %Z')}")
         logger.debug(f"Last publish: {schedule[-1].strftime('%Y-%m-%d %H:%M %Z')}")
 
@@ -226,10 +247,11 @@ class VideoScheduler:
         """
         Calculate the next available time slot based on existing scheduled videos.
 
-        This implements the "fill gaps" logic:
-        - If there are gaps in today's schedule, fill them
-        - If today is full (last slot at end_hour or later), start tomorrow
-        - If no videos scheduled, start tomorrow at start_hour
+        This implements smarter "fill gaps" logic:
+        - Generates all potential slots for the next 30 days
+        - Filters for slots in the future (from now)
+        - Finds the first potential slot that isn't already occupied
+        - Prioritizes filling gaps in today's schedule
 
         Args:
             existing_scheduled_videos: List of dicts with 'publishAt' (RFC 3339 string)
@@ -240,87 +262,75 @@ class VideoScheduler:
         now_utc = datetime.now(pytz.UTC)
         now_local = now_utc.astimezone(self.timezone)
 
-        # Parse existing scheduled times
-        scheduled_times = []
+        # Determine the earliest time a slot can be considered valid
+        # Add a small buffer (5 mins) to avoid scheduling in the immediate past
+        earliest_valid_time = now_local.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=5)
+
+        # Parse existing scheduled times and convert to local timezone
+        # Use a set for faster O(1) lookups
+        scheduled_times_local = set()
         for video in existing_scheduled_videos:
             publish_at_str = video.get("publishAt")
             if publish_at_str:
                 try:
                     dt_utc = parse_rfc3339_datetime(publish_at_str)
                     dt_local = dt_utc.astimezone(self.timezone)
-                    scheduled_times.append(dt_local)
+                    # Normalize to hour/minute 0 for comparison
+                    scheduled_times_local.add(dt_local.replace(minute=0, second=0, microsecond=0))
                 except Exception as e:
                     logger.warning(f"Failed to parse publishAt: {publish_at_str} - {e}")
 
-        # Sort scheduled times
-        scheduled_times.sort()
+        # Generate potential slots for the next 30 days
+        # This approach ensures we systematically find the first available gap
+        potential_slots = []
+        
+        # Start checking from today
+        current_day = now_local.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+        
+        for day_offset in range(30): # Check next 30 days
+            check_date = current_day + timedelta(days=day_offset)
+            
+            # Generate slots for this day
+            # From start_hour to end_hour with interval
+            current_slot = check_date.replace(hour=self.start_hour)
+            
+            while current_slot.hour <= self.end_hour:
+                # Only add if it respects end_hour (safety check loop condition)
+                if current_slot.hour <= self.end_hour:
+                    potential_slots.append(current_slot)
+                
+                current_slot += timedelta(hours=self.interval_hours)
+                
+                # Break if we wrapped around to next day (shouldn't happen with logic above but safe)
+                if current_slot.date() != check_date.date():
+                    break
 
-        if not scheduled_times:
-            # No videos scheduled - start tomorrow at start_hour
-            logger.info("No scheduled videos found. Starting tomorrow at start_hour.")
-            tomorrow = now_local + timedelta(days=1)
-            next_slot = tomorrow.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+        # Sort slots to ensure we pick earliest (should already be sorted by generation order)
+        potential_slots.sort()
+
+        # Find the first slot that:
+        # 1. Is in the future (after earliest_valid_time)
+        # 2. Is NOT in the set of already scheduled times
+        for slot in potential_slots:
+            if slot >= earliest_valid_time and slot not in scheduled_times_local:
+                logger.info(f"Found available slot: {slot.strftime('%Y-%m-%d %H:%M')}")
+                return slot.astimezone(pytz.UTC)
+
+        # Fallback if no slots found in 30 days (extremely unlikely)
+        logger.warning("No available slots found in next 30 days. Using fallback calculation.")
+        
+        if scheduled_times_local:
+            last_scheduled = max(scheduled_times_local)
+            next_slot = last_scheduled + timedelta(hours=self.interval_hours)
+            
+            # Adjust if outside daily hours
+            if next_slot.hour > self.end_hour:
+                next_slot = (next_slot + timedelta(days=1)).replace(hour=self.start_hour)
+            elif next_slot.hour < self.start_hour:
+                next_slot = next_slot.replace(hour=self.start_hour)
+                
             return next_slot.astimezone(pytz.UTC)
-
-        # Find the last scheduled video
-        last_scheduled = scheduled_times[-1]
-        logger.info(f"Last scheduled video: {last_scheduled.strftime('%Y-%m-%d %H:%M')}")
-
-        # Check if last scheduled is today
-        if last_scheduled.date() == now_local.date():
-            # There are videos scheduled for today
-            # Find next available slot for today
-            current_hour = last_scheduled.hour + self.interval_hours
-
-            if current_hour <= self.end_hour:
-                # There's still a slot available today
-                next_slot = last_scheduled.replace(hour=current_hour, minute=0, second=0, microsecond=0)
-                logger.info(f"Next slot available today: {next_slot.strftime('%Y-%m-%d %H:%M')}")
-                return next_slot.astimezone(pytz.UTC)
-            else:
-                # Today is full, move to tomorrow
-                logger.info("Today's schedule is full. Moving to tomorrow.")
-                next_day = last_scheduled + timedelta(days=1)
-                next_slot = next_day.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
-                return next_slot.astimezone(pytz.UTC)
         else:
-            # Last scheduled video is in the future (not today)
-            # Check if we can fill gaps in between
-
-            # Find all days with scheduled videos
-            scheduled_dates = sorted(set(dt.date() for dt in scheduled_times))
-
-            # Check each day for gaps
-            for date in scheduled_dates:
-                # Get all scheduled times for this day
-                day_schedule = [dt for dt in scheduled_times if dt.date() == date]
-                day_schedule.sort()
-
-                # Find gaps in this day's schedule
-                expected_hour = self.start_hour
-                for scheduled_dt in day_schedule:
-                    if scheduled_dt.hour > expected_hour:
-                        # Found a gap!
-                        gap_slot = scheduled_dt.replace(hour=expected_hour, minute=0, second=0, microsecond=0)
-                        logger.info(f"Found gap to fill: {gap_slot.strftime('%Y-%m-%d %H:%M')}")
-                        return gap_slot.astimezone(pytz.UTC)
-                    expected_hour = scheduled_dt.hour + self.interval_hours
-
-                # Check if there's room at the end of this day
-                last_hour_of_day = day_schedule[-1].hour
-                if last_hour_of_day + self.interval_hours <= self.end_hour:
-                    # There's a slot at the end of this day
-                    end_slot = day_schedule[-1].replace(
-                        hour=last_hour_of_day + self.interval_hours,
-                        minute=0,
-                        second=0,
-                        microsecond=0
-                    )
-                    logger.info(f"Slot available at end of day: {end_slot.strftime('%Y-%m-%d %H:%M')}")
-                    return end_slot.astimezone(pytz.UTC)
-
-            # No gaps found - schedule after the last scheduled video
-            next_day = last_scheduled + timedelta(days=1)
-            next_slot = next_day.replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
-            logger.info(f"No gaps found. Next slot: {next_slot.strftime('%Y-%m-%d %H:%M')}")
-            return next_slot.astimezone(pytz.UTC)
+            # Default to tomorrow start_hour if really nothing found
+            tomorrow = (now_local + timedelta(days=1)).replace(hour=self.start_hour, minute=0, second=0, microsecond=0)
+            return tomorrow.astimezone(pytz.UTC)

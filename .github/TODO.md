@@ -115,6 +115,11 @@ None
 
 ## 📋 Planned Features
 
+### Scheduling Improvements
+- [ ] **Smart Gap-Filling Logic Enhancement**: Refine `VideoScheduler.calculate_next_available_slot` to prioritize finding the earliest available slot *from the current moment*, including filling gaps in *today's* schedule before moving to subsequent days.
+  - **Problem**: Current logic defaults to starting from "tomorrow" and sometimes misses available slots or gaps earlier in the schedule.
+  - **Goal**: Ensure the scheduler checks for and fills today's open slots first, then systematically finds the earliest possible publish time across all configured daily windows, respecting interval and start/end hours.
+
 ### General Improvements
 - [ ] Unit tests for services
 - [ ] Integration tests for workflow

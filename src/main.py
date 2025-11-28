@@ -409,10 +409,50 @@ def batch_upload(channel: str | None, limit: int):
         for i, video_file in enumerate(video_files, 1):
             console.print(f"[cyan]Uploading {i}/{len(video_files)}: {video_file.name}[/cyan]")
 
+            # Try to load metadata if exists
+            title = None
+            description = None
+            tags = None
+            category_id = None
+
+            # metadata file pattern: video_001_metadata.json
+            metadata_file = video_file.with_suffix("").with_suffix(".json").name
+            # Handle possible double extension or just simple replace
+            metadata_name = video_file.stem + "_metadata.json"
+            metadata_path = output_dir / metadata_name
+            
+            if metadata_path.exists():
+                try:
+                    import json
+                    with open(metadata_path, encoding="utf-8") as f:
+                        metadata = json.load(f)
+                        title = metadata.get("title")
+                        description = metadata.get("description")
+                        tags = metadata.get("tags")
+                        category_id = metadata.get("category_id")
+                    console.print(f"[green]  ✓ Found metadata: {title[:50]}...[/green]")
+                except Exception as e:
+                    logger.warning(f"Failed to load metadata from {metadata_path}: {e}")
+                    console.print(f"[yellow]  ⚠ Failed to load metadata, using defaults[/yellow]")
+
+            # Use metadata category_id if available, otherwise channel config
+            final_category_id = category_id or channel_config.config.youtube.category_id
+            
+            # Get channel specific settings
+            made_for_kids = channel_config.config.youtube.made_for_kids
+            # Default to English as requested, could be added to config later
+            default_language = "en"
+
             try:
                 result = youtube.upload_video_as_private(
                     video_path=video_file,
                     filename=video_file.name,
+                    title=title,
+                    description=description,
+                    tags=tags,
+                    category_id=final_category_id,
+                    made_for_kids=made_for_kids,
+                    default_language=default_language,
                 )
                 uploaded_videos.append((video_file.name, result.video_id))
                 console.print(f"[green]✓ Uploaded: {result.video_id}[/green]\n")
@@ -528,10 +568,15 @@ def batch_schedule(channel: str | None, dry_run: bool):
 
         # Initialize services with channel config
         youtube = YouTubeService(credentials_path=channel_config.credentials_path)
+        
+        timezone = channel_config.config.youtube.schedule.timezone
+        console.print(f"[cyan]Scheduler Timezone: {timezone}[/cyan]")
+        
         scheduler = VideoScheduler(
             start_hour=channel_config.config.youtube.schedule.start_hour,
             end_hour=channel_config.config.youtube.schedule.end_hour,
             interval_hours=channel_config.config.youtube.schedule.interval_hours,
+            timezone=timezone,
         )
 
         # Get existing scheduled videos from YouTube
@@ -593,7 +638,10 @@ def batch_schedule(channel: str | None, dry_run: bool):
                         title = metadata.get("title", "Untitled Video")
                         description = metadata.get("description", "")
                         tags = metadata.get("tags", [])
-                        category_id = metadata.get("category_id", channel_config.config.youtube.category_id)
+                        
+                        # FORCE category from channel config to ensure consistency
+                        # Metadata might have incorrect AI-generated category
+                        category_id = channel_config.config.youtube.category_id
                 else:
                     # Use defaults from channel config
                     logger.warning(f"No metadata found for {filename}, using defaults")

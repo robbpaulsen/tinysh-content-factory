@@ -28,6 +28,7 @@ python -m src.main generate --count 5 --profile frank_motivational
 ```
 
 **Output**:
+
 - `output/video_001.mp4`, `video_002.mp4`, ...
 - `output/video_001_metadata.json`, `video_002_metadata.json`, ...
 
@@ -47,11 +48,13 @@ python -m src.main --verbose batch-upload
 ```
 
 **¿Qué hace?**
+
 - Sube videos a YouTube como PRIVATE
 - Metadata temporal (será reemplazada en Fase 2)
 - Guarda video IDs en `output/video_ids.csv`
 
 **Output**:
+
 ```
 📤 Phase 1: Batch Upload (Private)
 
@@ -89,12 +92,14 @@ python -m src.main --verbose batch-schedule
 ```
 
 **¿Qué hace?**
+
 - Lee `video_ids.csv` y metadata JSON
 - Consulta videos ya programados en YouTube
 - Calcula siguiente slot disponible (llena huecos)
 - Actualiza videos con metadata final + publishAt
 
 **Output (Dry Run)**:
+
 ```
 📅 Phase 2: Batch Schedule
 
@@ -117,6 +122,7 @@ Found 42 already scheduled videos
 ```
 
 **Output (Real)**:
+
 ```
 Updating videos with metadata and schedule...
 
@@ -152,7 +158,7 @@ cat output/video_ids.csv
 
 ### 2. Verificar en YouTube Studio
 
-1. Ir a https://studio.youtube.com
+1. Ir a <https://studio.youtube.com>
 2. Navegar a **Content → Videos**
 3. Verificar:
    - Status: **Private**
@@ -226,7 +232,7 @@ python -m src.main batch-schedule
 
 ```bash
 # YouTube Schedule
-YOUTUBE_TIMEZONE=America/Chicago
+YOUTUBE_TIMEZONE=America/Mexico_City
 YOUTUBE_SCHEDULE_START_HOUR=6   # 6 AM
 YOUTUBE_SCHEDULE_END_HOUR=16    # 4 PM
 YOUTUBE_SCHEDULE_INTERVAL_HOURS=2
@@ -242,6 +248,7 @@ SEO_ENABLED=true
 ### Slots diarios
 
 Con configuración default:
+
 - **6 AM**, **8 AM**, **10 AM**, **12 PM**, **2 PM**, **4 PM**
 - **Total**: 6 videos/día
 
@@ -285,12 +292,14 @@ YOUTUBE_TIMEZONE=America/Chicago
 ## Límites y Best Practices
 
 ✅ **DO**:
+
 - Siempre hacer `--dry-run` antes de `batch-schedule`
 - No exceder 20 videos por día
 - Hacer backup de `video_ids.csv`
 - Verificar en YouTube Studio después de schedule
 
 ❌ **DON'T**:
+
 - No borrar `video_ids.csv` antes de schedule
 - No subir más de 20 videos/día (límite API)
 - No modificar manualmente videos entre fase 1 y 2

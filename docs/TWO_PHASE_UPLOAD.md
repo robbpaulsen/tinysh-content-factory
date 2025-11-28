@@ -99,43 +99,65 @@ python -m src.main batch-schedule
 
 ### Lógica de "Fill Gaps"
 
-El scheduler es inteligente y llena huecos en el schedule existente:
+El scheduler es inteligente y llena huecos en el schedule existente, **priorizando los slots disponibles desde el momento actual y en el día de hoy, antes de pasar a días futuros.**
 
-#### Escenario 1: Hay slots disponibles hoy
+#### Escenario 1: Hay slots disponibles hoy, a partir de ahora
 
 ```
+Hora actual: 09:30 AM
+Slots configurados: 06:00 AM, 08:00 AM, 10:00 AM, 12:00 PM, 02:00 PM, 04:00 PM
+
 Videos programados hoy:
   - 06:00 AM ✓
   - 08:00 AM ✓
-  - 10:00 AM ✓
+  - 10:00 AM ✗ (slot libre)
 
-Siguiente slot: 12:00 PM (llena el hueco)
+Siguiente slot disponible: 10:00 AM (llena el hueco a partir de la hora actual)
 ```
 
-#### Escenario 2: Hoy está lleno
+#### Escenario 2: Hoy está lleno o no hay slots futuros hoy
 
 ```
+Hora actual: 03:00 PM
+Slots configurados: 06:00 AM, 08:00 AM, 10:00 AM, 12:00 PM, 02:00 PM, 04:00 PM
+
 Videos programados hoy:
   - 06:00 AM ✓
   - 08:00 AM ✓
   - 10:00 AM ✓
   - 12:00 PM ✓
   - 02:00 PM ✓
-  - 04:00 PM ✓ (último slot)
+  - 04:00 PM ✓ (último slot del día)
 
-Siguiente slot: Mañana 06:00 AM
+Siguiente slot disponible: Mañana 06:00 AM
 ```
 
-#### Escenario 3: Hay gaps entre días
+#### Escenario 3: No hay videos programados
 
 ```
+Hora actual: Cualquier momento
+
+No hay videos programados en YouTube.
+
+Siguiente slot disponible: El primer slot configurado hoy (si es futuro) o el primer slot de mañana.
+```
+
+#### Escenario 4: Hay gaps entre días (y hoy ya no tiene slots disponibles)
+
+```
+Hora actual: Cualquier momento en un día posterior.
+
 Día 1:
   - 06:00 AM ✓
   - 08:00 AM ✓
-  - 10:00 AM ✗ (GAP)
+  - 10:00 AM ✗ (GAP - en el pasado, no se considerará)
   - 12:00 PM ✓
 
-Siguiente slot: Día 1, 10:00 AM (llena el gap)
+Día 2:
+  - 06:00 AM ✗ (slot libre, en el futuro)
+  - 08:00 AM ✓
+
+Siguiente slot disponible: Día 2, 06:00 AM (llena el gap más temprano y futuro)
 ```
 
 ### Horario de Publicación

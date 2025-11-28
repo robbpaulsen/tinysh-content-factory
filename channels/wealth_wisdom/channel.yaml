@@ -45,6 +45,7 @@ scenes:
 image:
   model: "black-forest-labs/FLUX.1-schnell-Free"
   style: "Create a photorealistic, cinematic image in a dramatic, high-contrast style. Apply a cool blue color grading, subtly accented with elegant green and gold tones to represent wealth. The scene features a mysterious professional figure **seen strictly from behind or in silhouette**, ensuring **no facial features are visible**. The figure is [standing on a balcony overlooking a blurred city skyline at night, observing a large holographic market chart projected on a glass wall, or walking through a modern corridor towards a bright light representing future success]. The composition uses a 'shallow depth of field' to keep the background softly blurred, emphasizing the atmosphere and the figure's posture rather than their identity. The visual language must be strictly atmospheric and narrative, **avoiding any text, logos, icons, or graphical overlays**. The mood creates a sense of calm determination, wisdom, and financial strategy, evoking the aesthetic of a high-end financial documentary."
+negative_prompt: "deformed iris, deformed pupils, bad teeth, deformed teeth, extra fingers, worst hand, error, cropped, ugly, morbid, mutated hands, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, missing arms, missing legs, extra arms, extra legs, long neck, deformed lips, poorly drawn fingers, fused fingers, extra fingers, poorly drawn hands, poorly drawn body, malformed, mutated, mutilated, disfigured, missing fingers, watermark, signature, username, error, logo, autograph, trademark, name:1.2, subtitle, worst quality, low quality, normal quality, low res"
 
 # YouTube upload settings
 youtube:
@@ -52,9 +53,9 @@ youtube:
   made_for_kids: false
   schedule:
     videos_per_day: 3
-    start_hour: 12 # 12 pm (different from momentum)
-    end_hour: 18 # 4 PM
-    interval_hours: 3
+    start_hour: 6 # 12 pm (different from momentum)
+    end_hour: 16 # 4 PM
+    interval_hours: 5
     timezone: "America/Mexico_City"
   default_tags:
     - finance

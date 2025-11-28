@@ -6,29 +6,29 @@ description: "Best finance tips and success stories compiled"
 handle: "@FinanceWinsCompiled"
 
 # Channel type
-channel_type: "youtube_compilation"  # Different from AI generation
+channel_type: "youtube_compilation" # Different from AI generation
 
 # Content settings
 content:
   format: "compilation_video"
-  duration_range: [180, 600]  # 3-10 minutes
-  sheet_tab: "finance_wins"  # Google Sheets tab name (not used for compilations)
-  compilation_type: "top_N"  # top_5, top_10, best_of
+  duration_range: [180, 600] # 3-10 minutes
+  sheet_tab: "finance_wins" # Google Sheets tab name (not used for compilations)
+  compilation_type: "top_N" # top_5, top_10, best_of
 
 # Video format
 video:
-  aspect_ratio: "16:9"  # Regular video format
+  aspect_ratio: "16:9" # Regular video format
   width: 1920
   height: 1080
 
 # Compilation settings
 compilation:
-  clips_per_video: [5, 10]  # 5-10 clips per compilation
-  clip_duration_max: 60  # Max 60 seconds per clip
+  clips_per_video: [5, 10] # 5-10 clips per compilation
+  clip_duration_max: 60 # Max 60 seconds per clip
   transitions: "fade"
-  add_text_overlays: true  # "#1", "#2", etc.
-  add_intro: false  # Set to true when intro video is created
-  add_outro: false  # Set to true when outro video is created
+  add_text_overlays: true # "#1", "#2", etc.
+  add_intro: false # Set to true when intro video is created
+  add_outro: false # Set to true when outro video is created
 
 # YouTube download settings
 youtube_download:
@@ -42,8 +42,8 @@ youtube_download:
     - "how to save money shorts"
     - "best investments shorts"
   max_results_per_query: 20
-  min_views: 10000  # Only videos with 10k+ views
-  max_days_old: 90  # Only videos from last 90 days
+  min_views: 10000 # Only videos with 10k+ views
+  max_days_old: 90 # Only videos from last 90 days
   download_format: "best[height<=1080]"
 
 # Background music
@@ -56,14 +56,14 @@ background_music:
 
 # YouTube upload settings
 youtube:
-  category_id: "24"  # Entertainment
+  category_id: "24" # Entertainment
   made_for_kids: false
   schedule:
     videos_per_day: 4
-    start_hour: 10   # 10 AM (different times)
-    end_hour: 22     # 10 PM
+    start_hour: 10 # 10 AM (different times)
+    end_hour: 22 # 10 PM
     interval_hours: 3
-    timezone: "America/Chicago"
+    timezone: "America/Mexico_City"
   default_tags:
     - finance
     - money

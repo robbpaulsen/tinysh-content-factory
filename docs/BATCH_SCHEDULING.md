@@ -13,10 +13,13 @@ The batch scheduling system automatically:
 
 ## Default Schedule Pattern
 
+The scheduler will find the earliest available slot starting from the current moment, prioritizing any open slots today that fall within the configured hours, then moving to tomorrow if today's slots are exhausted or in the past.
+
 ```
-Day 1:  6 AM,  8 AM, 10 AM, 12 PM,  2 PM,  4 PM  (6 videos)
-Day 2:  6 AM,  8 AM, 10 AM, 12 PM,  2 PM,  4 PM  (6 videos)
-Day 3:  6 AM,  8 AM, 10 AM, 12 PM,  2 PM,  4 PM  (6 videos)
+Example (assuming current time allows for today's slots):
+Day N (Today):  [Earliest available slot today], ... [Last available slot today]
+Day N+1 (Tomorrow):  6 AM,  8 AM, 10 AM, 12 PM,  2 PM,  4 PM  (6 videos)
+Day N+2:  6 AM,  8 AM, 10 AM, 12 PM,  2 PM,  4 PM  (6 videos)
 ...and so on until all videos are scheduled
 ```
 
@@ -38,7 +41,7 @@ python -m src.main schedule-uploads --dry-run
 
 This will show you:
 - Total number of videos found
-- Calculated publish schedule
+- Calculated publish schedule, **starting from the earliest available slot today (if applicable) or tomorrow.**
 - Detailed table with each video and its publish time
 - No videos will be uploaded
 

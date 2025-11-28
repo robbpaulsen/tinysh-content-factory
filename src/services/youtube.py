@@ -17,7 +17,9 @@ from src.models import YouTubeUploadResult
 logger = logging.getLogger(__name__)
 
 SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube",
     "https://www.googleapis.com/auth/youtube.readonly",
 ]
 
@@ -62,10 +64,10 @@ class YouTubeService:
                 logger.info("Refreshing YouTube credentials")
                 creds.refresh(Request())
             else:
-                logger.info(f"Starting OAuth flow for YouTube (credentials: {self.credentials_path})")
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(self.credentials_path), SCOPES
+                logger.info(
+                    f"Starting OAuth flow for YouTube (credentials: {self.credentials_path})"
                 )
+                flow = InstalledAppFlow.from_client_secrets_file(str(self.credentials_path), SCOPES)
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for next run
@@ -126,9 +128,7 @@ class YouTubeService:
 
         # Validate scheduling requirements
         if publish_at and privacy_status != "private":
-            logger.warning(
-                "Scheduled videos must be private. Forcing privacy_status='private'"
-            )
+            logger.warning("Scheduled videos must be private. Forcing privacy_status='private'")
             privacy_status = "private"
 
         # Prepare request body
@@ -257,17 +257,29 @@ class YouTubeService:
         self,
         video_path: Path,
         filename: str,
+        title: str | None = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
+        category_id: str | None = None,
+        made_for_kids: bool = False,
+        default_language: str | None = None,
     ) -> YouTubeUploadResult:
         """
-        Upload a video to YouTube as PRIVATE with temporary metadata.
+        Upload a video to YouTube as PRIVATE.
 
         This is Phase 1 of the 2-phase upload/schedule system.
-        The video will be uploaded with minimal metadata and can be
-        scheduled later using update_video_schedule().
+        Can optionally include final metadata during upload to ensure
+        video is ready even before scheduling.
 
         Args:
             video_path: Path to video file
             filename: Original filename for tracking
+            title: Video title (optional)
+            description: Video description (optional)
+            tags: List of tags (optional)
+            category_id: YouTube category ID (optional)
+            made_for_kids: Self-declared made for kids status (default: False)
+            default_language: Default language of video (e.g. 'en', 'es')
 
         Returns:
             YouTubeUploadResult with video ID and URL
@@ -275,24 +287,39 @@ class YouTubeService:
         if not video_path.exists():
             raise FileNotFoundError(f"Video file not found: {video_path}")
 
-        # Use temporary metadata for initial upload
-        temporary_title = "Uploading... (metadata pending)"
-        temporary_description = "This video is being processed. Metadata will be updated shortly."
+        # Use provided metadata or fallbacks
+        final_title = title or "Uploading... (metadata pending)"
+        final_description = description or "This video is being processed. Metadata will be updated shortly."
+        final_tags = tags or []
+        final_category_id = category_id or settings.youtube_category_id
+
+        # Truncate to limits just in case
+        final_title = final_title[:100]
+        final_description = final_description[:5000]
 
         logger.info(f"Uploading video as private: {filename}")
+        if title:
+            logger.info(f"Using provided metadata - Title: {final_title}")
 
-        # Prepare request body with minimal metadata
+        # Prepare request body
         body = {
             "snippet": {
-                "title": temporary_title,
-                "description": temporary_description,
-                "categoryId": settings.youtube_category_id,
+                "title": final_title,
+                "description": final_description,
+                "tags": final_tags,
+                "categoryId": final_category_id,
             },
             "status": {
                 "privacyStatus": "private",
-                "selfDeclaredMadeForKids": False,
+                "selfDeclaredMadeForKids": made_for_kids,
             },
         }
+
+        # Add optional snippet fields
+        if default_language:
+            body["snippet"]["defaultLanguage"] = default_language
+            # Also set defaultAudioLanguage if it matches defaultLanguage
+            body["snippet"]["defaultAudioLanguage"] = default_language
 
         # Create media upload
         media = MediaFileUpload(
@@ -323,7 +350,7 @@ class YouTubeService:
         return YouTubeUploadResult(
             video_id=video_id,
             url=video_url,
-            title=temporary_title,
+            title=final_title,
         )
 
     @retry(
@@ -404,23 +431,57 @@ class YouTubeService:
         logger.info("Fetching scheduled videos from channel")
 
         try:
-            # Get channel's uploaded videos playlist
-            channels_response = self.service.channels().list(
-                part="contentDetails",
-                mine=True,
-            ).execute()
+            # 1. Get channel's "uploads" playlist ID
+            channels_response = (
+                self.service.channels()
+                .list(
+                    part="contentDetails",
+                    mine=True,
+                )
+                .execute()
+            )
 
             if not channels_response.get("items"):
                 logger.warning("No channel found for authenticated user")
                 return []
 
-            # Get videos from the channel
-            videos_response = self.service.videos().list(
-                part="snippet,status",
-                chart="mostPopular",  # This doesn't work for getting own videos
-                mine=True,
-                maxResults=max_results,
-            ).execute()
+            uploads_playlist_id = channels_response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            logger.debug(f"Found uploads playlist ID: {uploads_playlist_id}")
+
+            # 2. Get videos from the "uploads" playlist
+            # playlistItems gives us the video IDs
+            playlist_response = (
+                self.service.playlistItems()
+                .list(
+                    part="snippet",
+                    playlistId=uploads_playlist_id,
+                    maxResults=max_results,
+                )
+                .execute()
+            )
+
+            if not playlist_response.get("items"):
+                logger.info("No videos found in uploads playlist")
+                return []
+
+            # Extract video IDs
+            video_ids = []
+            for item in playlist_response["items"]:
+                video_ids.append(item["snippet"]["resourceId"]["videoId"])
+
+            if not video_ids:
+                return []
+
+            # 3. Get full details (status) for these videos
+            # We need this because playlistItems doesn't always have accurate status/publishAt
+            videos_response = (
+                self.service.videos()
+                .list(
+                    part="snippet,status",
+                    id=",".join(video_ids),
+                )
+                .execute()
+            )
 
             scheduled_videos = []
             for video in videos_response.get("items", []):
@@ -428,11 +489,13 @@ class YouTubeService:
 
                 # Check if video is private and has publishAt set
                 if status.get("privacyStatus") == "private" and status.get("publishAt"):
-                    scheduled_videos.append({
-                        "id": video["id"],
-                        "title": video["snippet"]["title"],
-                        "publishAt": status["publishAt"],
-                    })
+                    scheduled_videos.append(
+                        {
+                            "id": video["id"],
+                            "title": video["snippet"]["title"],
+                            "publishAt": status["publishAt"],
+                        }
+                    )
 
             logger.info(f"Found {len(scheduled_videos)} scheduled videos")
             return scheduled_videos

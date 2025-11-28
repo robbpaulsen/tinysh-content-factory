@@ -10,7 +10,7 @@
 # Profile definitions
 profiles:
   # Brody - Calm & Reflective
-  atlas_theone:
+  atlas_motivational:
     name: "Atlas - First Born"
     description: "Deep, interesting voice, he wears zen and gives aways knowledge"
 
@@ -211,7 +211,7 @@ profiles:
       rotation: random
 
 # Default profile to use when --profile flag is not specified
-default_profile: frank_motivational
+#default_profile: frank_motivational
 
 # Music rotation state (auto-managed, do not edit manually)
 rotation_state:

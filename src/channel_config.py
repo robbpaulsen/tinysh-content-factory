@@ -15,7 +15,8 @@ class ContentSettings(BaseModel):
 
     format: str  # shorts, video, compilation_video
     duration_range: list[int]
-    subreddit: str | None = None
+    subreddit: str | None = None  # Legacy single subreddit
+    subreddits: list[str] = Field(default_factory=list)  # New multi-subreddit support
     sheet_tab: str | None = None  # Google Sheets tab name for this channel
     backup_subreddits: list[str] = Field(default_factory=list)
     content_type: str | None = None
@@ -255,10 +256,25 @@ class ChannelConfig:
     def get_subreddits(self) -> list[str]:
         """Get list of subreddits for content sourcing."""
         subreddits = []
-        if self.config.content.subreddit:
+        # Use new list field if available
+        if self.config.content.subreddits:
+            subreddits.extend(self.config.content.subreddits)
+        # Fallback to legacy single field
+        elif self.config.content.subreddit:
             subreddits.append(self.config.content.subreddit)
+        
+        # Add backups
         subreddits.extend(self.config.content.backup_subreddits)
-        return subreddits
+        
+        # Deduplicate while preserving order
+        seen = set()
+        unique_subreddits = []
+        for sub in subreddits:
+            if sub not in seen:
+                unique_subreddits.append(sub)
+                seen.add(sub)
+                
+        return unique_subreddits
 
     def __repr__(self) -> str:
         """String representation."""

@@ -61,7 +61,41 @@ class GoogleSheetsService:
                 token.write(creds.to_json())
 
         self.service = build("sheets", "v4", credentials=creds)
-        logger.info("Google Sheets authentication successful")
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+    )
+    def get_existing_post_ids(self) -> set[str]:
+        """
+        Get set of all Reddit post IDs currently in the sheet.
+        Used for duplicate checking before saving new stories.
+
+        Returns:
+            Set of post ID strings
+        """
+        logger.info("Fetching existing post IDs from Google Sheets")
+
+        # Get only column A (IDs)
+        range_name = f"{self.sheet_name}!A:A"
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .get(spreadsheetId=self.spreadsheet_id, range=range_name)
+            .execute()
+        )
+
+        rows = result.get("values", [])
+        existing_ids = set()
+
+        # Skip header if it exists (naive check: usually row 1)
+        # We just collect everything, if 'id' is in the set it's fine
+        for row in rows:
+            if row and row[0].strip():
+                existing_ids.add(row[0].strip())
+
+        logger.info(f"Found {len(existing_ids)} existing stories")
+        return existing_ids
 
     @retry(
         stop=stop_after_attempt(3),

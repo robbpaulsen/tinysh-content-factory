@@ -3,7 +3,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from rich.console import Console
@@ -106,32 +106,100 @@ class WorkflowOrchestrator:
         """
         Download stories from Reddit and save to Google Sheets.
 
+        Features:
+        - Supports multiple subreddits (from channel config)
+        - Distributes quota equally among subreddits
+        - Filters posts from last 6 months
+        - Checks for duplicates against existing Sheet entries
+
         Args:
-            subreddit: Subreddit name (defaults to channel config or settings.subreddit)
-            limit: Number of stories to fetch
+            subreddit: Override subreddit (optional)
+            limit: Total number of stories to fetch
 
         Returns:
             Number of stories saved
         """
         console.print(f"\n[bold cyan]📥 Fetching stories from Reddit...[/bold cyan]")
 
-        # Use subreddit from: 1) explicit arg, 2) channel config, 3) settings
-        if not subreddit:
-            if self.channel_config and hasattr(self.channel_config.config.content, "subreddit"):
-                subreddit = self.channel_config.config.content.subreddit
+        # 1. Determine subreddits to scrape
+        target_subreddits = []
+        if subreddit:
+            target_subreddits.append(subreddit)
+        elif self.channel_config:
+            target_subreddits = self.channel_config.get_subreddits()
+        else:
+            target_subreddits = [settings.subreddit]
 
-        # Fetch stories
-        posts = self.reddit.get_top_stories(
-            subreddit_name=subreddit, time_filter="month", limit=limit
-        )
-
-        if not posts:
-            console.print("[yellow]No stories found[/yellow]")
+        if not target_subreddits:
+            console.print("[red]No subreddits configured[/red]")
             return 0
 
-        # Save to sheets
-        count = self.sheets.save_stories(posts)
-        console.print(f"[green]✓ Saved {count} stories to Google Sheets[/green]")
+        # 2. Get existing IDs to avoid duplicates
+        try:
+            existing_ids = self.sheets.get_existing_post_ids()
+            console.print(f"[cyan]Found {len(existing_ids)} existing stories in Sheets[/cyan]")
+        except Exception as e:
+            logger.error(f"Failed to get existing IDs: {e}")
+            existing_ids = set()
+
+        # 3. Calculate limits per subreddit
+        # Distribute limit equitably, rounding up
+        per_subreddit_limit = -(-limit // len(target_subreddits))  # Ceiling division
+        console.print(f"[cyan]Targeting ~{per_subreddit_limit} posts from {len(target_subreddits)} subreddits[/cyan]")
+
+        # 4. Calculate timestamp for "6 months ago"
+        # Using 180 days as approximation
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=180)
+        min_timestamp = cutoff_date.timestamp()
+        console.print(f"[cyan]Filtering posts newer than: {cutoff_date.strftime('%Y-%m-%d')}[/cyan]")
+
+        all_new_posts = []
+        collected_ids = set()  # Track IDs collected in this run to avoid cross-subreddit dupes
+
+        for sub in target_subreddits:
+            try:
+                # Fetch more than needed to account for filtering (dupes/date)
+                # Fetching 3x buffer or at least 50
+                fetch_limit = max(50, per_subreddit_limit * 3)
+
+                posts = self.reddit.get_top_stories(
+                    subreddit_name=sub,
+                    time_filter="year",  # Get best of the year
+                    limit=fetch_limit,
+                    min_timestamp=min_timestamp
+                )
+
+                added_count = 0
+                for post in posts:
+                    # Stop if we hit the per-subreddit target
+                    if added_count >= per_subreddit_limit:
+                        break
+                    
+                    # Duplicate check
+                    if post.id in existing_ids or post.id in collected_ids:
+                        continue
+
+                    all_new_posts.append(post)
+                    collected_ids.add(post.id)
+                    added_count += 1
+                
+                console.print(f"  → r/{sub}: Found {added_count} new stories")
+
+            except Exception as e:
+                logger.error(f"Error fetching from r/{sub}: {e}")
+                console.print(f"[yellow]⚠ Failed to fetch from r/{sub}[/yellow]")
+
+        # 5. Trim to global limit if necessary
+        if len(all_new_posts) > limit:
+            all_new_posts = all_new_posts[:limit]
+
+        if not all_new_posts:
+            console.print("[yellow]No new stories found matching criteria[/yellow]")
+            return 0
+
+        # 6. Save to sheets
+        count = self.sheets.save_stories(all_new_posts)
+        console.print(f"[green]✓ Saved {count} unique stories to Google Sheets[/green]")
 
         return count
 

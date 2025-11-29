@@ -53,7 +53,8 @@ class GoogleSheetsService:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     str(self.credentials_path), SCOPES
                 )
-                creds = flow.run_local_server(port=0)
+                # Force account selection to avoid browser cache issues
+                creds = flow.run_local_server(port=0, prompt="consent")
 
             # Save credentials for next run
             with open(token_path, "w") as token:

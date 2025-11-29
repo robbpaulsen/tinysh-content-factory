@@ -339,6 +339,14 @@ Usa esta opción si quieres separación total entre canales.
    # El token se guarda automáticamente en channels/momentum_mindset/token_youtube.json
    ```
 
+### ⚠️ Nota sobre Autenticación Múltiple
+
+El sistema ahora **forzará la pantalla de consentimiento** (`prompt="consent"`) cada vez que necesite generar un nuevo token. Esto es para prevenir que el navegador use silenciosamente la cuenta equivocada si tienes múltiples sesiones abiertas.
+
+Deberás prestar atención a qué permiso se está solicitando:
+- **Sheets API**: Usa tu cuenta principal (donde está el Sheet).
+- **YouTube API**: Usa la cuenta específica del canal que estás procesando.
+
 ### Opción B: Todos los Canales en Una Cuenta
 
 Usa esta opción si quieres simplicidad (todos los canales en una cuenta Google).

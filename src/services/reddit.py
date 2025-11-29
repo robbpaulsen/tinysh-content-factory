@@ -1,6 +1,7 @@
 """Reddit service for scraping stories using public JSON endpoints."""
 
 import logging
+from datetime import datetime, timezone
 from typing import Literal
 
 import httpx
@@ -40,6 +41,7 @@ class RedditService:
         time_filter: Literal["day", "week", "month", "year", "all"] = "month",
         limit: int = 25,
         min_content_length: int = 100,
+        min_timestamp: float | None = None,
     ) -> list[RedditPost]:
         """
         Get top stories from a subreddit using public JSON endpoint.
@@ -47,8 +49,9 @@ class RedditService:
         Args:
             subreddit_name: Subreddit name (defaults to settings.subreddit if not provided)
             time_filter: Time filter for top posts
-            limit: Maximum number of posts to retrieve
+            limit: Maximum number of posts to retrieve per request
             min_content_length: Minimum content length to filter
+            min_timestamp: Filter posts created after this UTC timestamp
 
         Returns:
             List of RedditPost objects
@@ -80,6 +83,12 @@ class RedditService:
             if not selftext or len(selftext) < min_content_length:
                 continue
 
+            # Filter: Check timestamp if provided
+            if min_timestamp:
+                created_utc = post_data.get("created_utc", 0)
+                if created_utc < min_timestamp:
+                    continue
+
             post = RedditPost(
                 id=post_data.get("id", ""),
                 title=post_data.get("title", ""),
@@ -90,10 +99,7 @@ class RedditService:
             )
             posts.append(post)
 
-            if len(posts) >= limit:
-                break
-
-        logger.info(f"Retrieved {len(posts)} qualifying stories")
+        logger.info(f"Retrieved {len(posts)} qualifying stories from r/{subreddit_name}")
         return posts
 
     @retry(

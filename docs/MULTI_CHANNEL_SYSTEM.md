@@ -190,6 +190,24 @@ Cada canal en una cuenta diferente:
    cp ~/Downloads/credentials_finance.json channels/finance_wins/credentials.json
    ```
 
+### ⚠️ Importante: Autenticación y Múltiples Cuentas
+
+Para evitar problemas donde el navegador usa una cuenta equivocada por caché (ej: subir video del Canal A usando la sesión del Canal B), el sistema ahora **fuerza la pantalla de consentimiento** cada vez que necesita autenticar.
+
+**Flujo de Autenticación Esperado:**
+
+Cuando ejecutes un comando (ej: `generate` o `batch-upload`), es posible que veas **dos ventanas de autenticación consecutivas**:
+
+1. **Google Sheets (Cuenta Principal)**:
+   - Permiso: `View and manage your Google Sheets spreadsheets`
+   - **Acción**: Selecciona la cuenta donde tienes tu hoja de cálculo de control.
+
+2. **YouTube (Cuenta del Canal)**:
+   - Permiso: `Manage your YouTube videos`
+   - **Acción**: Selecciona la cuenta CORRESPONDIENTE al canal que estás procesando (ej: selecciona la cuenta de `@MomentumMindset` si estás trabajando en ese canal).
+
+**Nota**: Si seleccionas la cuenta equivocada, recibirás un error de "Resource not authorized". Si esto pasa, borra el archivo `token_youtube.json` del canal y vuelve a intentar.
+
 ### Opción B: Misma Cuenta (Simplificado)
 
 Todos los canales en la misma cuenta de YouTube:

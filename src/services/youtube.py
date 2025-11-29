@@ -17,10 +17,7 @@ from src.models import YouTubeUploadResult
 logger = logging.getLogger(__name__)
 
 SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube",
-    "https://www.googleapis.com/auth/youtube.readonly",
 ]
 
 
@@ -68,7 +65,8 @@ class YouTubeService:
                     f"Starting OAuth flow for YouTube (credentials: {self.credentials_path})"
                 )
                 flow = InstalledAppFlow.from_client_secrets_file(str(self.credentials_path), SCOPES)
-                creds = flow.run_local_server(port=0)
+                # Force account selection to avoid browser cache issues
+                creds = flow.run_local_server(port=0, prompt="consent")
 
             # Save credentials for next run
             self.token_path.parent.mkdir(parents=True, exist_ok=True)

@@ -230,6 +230,12 @@ You have **two options** for YouTube authentication:
 4. First time you run a command for a channel, it will open OAuth flow
 5. Token is saved in the same directory automatically
 
+**⚠️ Important Note on Authentication:**
+The system now forces the consent screen (`prompt="consent"`) to prevent cross-account issues. You may be prompted twice:
+1. **Google Sheets**: Select your main account (asks for Spreadsheet permissions).
+2. **YouTube**: Select the specific account for that channel (asks for YouTube permissions).
+Always check which permission is being requested before selecting the account!
+
 #### Option B: Same YouTube Account
 - All channels under one Google account
 - Uses playlists or brand channels

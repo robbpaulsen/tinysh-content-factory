@@ -12,6 +12,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.config import settings
 from src.constants import TIMEOUT_TTS_GENERATION
 from src.models import GeneratedImage, GeneratedTTS, GeneratedVideo, MediaProcessingStatus
+from src.services.cache import AssetCache
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,14 @@ class MediaService:
     - 'local': Uses local media_local modules directly (faster, no HTTP overhead)
     """
 
-    def __init__(self, base_url: str | None = None, execution_mode: str = "remote"):
+    def __init__(self, base_url: str | None = None, execution_mode: str = "remote", enable_cache: bool = True):
         """
         Initialize media service.
 
         Args:
             base_url: Base URL of media server (defaults to settings.media_server_url)
             execution_mode: 'remote' (HTTP API) or 'local' (direct modules)
+            enable_cache: Whether to enable smart caching (default: True)
         """
         self.execution_mode = execution_mode
         self.base_url = (base_url or settings.media_server_url).rstrip("/")
@@ -45,6 +47,20 @@ class MediaService:
         self._local_chatterbox_tts = None
         self._local_caption = None
         self._local_video_builder = None
+
+        # Smart cache for assets
+        self.enable_cache = enable_cache
+        if enable_cache:
+            cache_dir = Path("./media_local_storage/cache")
+            self.cache = AssetCache(
+                cache_dir=cache_dir,
+                similarity_threshold=0.85,
+                enable_similarity=True
+            )
+            logger.info("Smart cache enabled")
+        else:
+            self.cache = None
+            logger.info("Smart cache disabled")
 
         if execution_mode == "local":
             logger.info(f"Initialized media service in LOCAL mode")
@@ -80,6 +96,20 @@ class MediaService:
     async def close(self):
         """Close HTTP client."""
         await self.client.aclose()
+
+    def get_cache_stats(self) -> dict:
+        """
+        Get cache statistics.
+
+        Returns:
+            Dict with cache stats (or empty dict if cache disabled)
+        """
+        if not self.cache:
+            return {"enabled": False}
+
+        stats = self.cache.get_stats()
+        stats["enabled"] = True
+        return stats
 
     async def wait_for_file_ready(self, file_id: str, poll_interval: float = 0.5, timeout: float = 60.0) -> bool:
         """
@@ -231,8 +261,33 @@ class MediaService:
         Returns:
             GeneratedImage with URL and file_id
         """
+        # Check cache first
+        cache_key = f"{prompt}|{negative_prompt or ''}"
+        if self.cache:
+            cached = self.cache.get("image", cache_key)
+            if cached:
+                file_path, metadata = cached
+                logger.info(f"Cache HIT for image: {metadata['match_type']} match")
+                # For local mode, file_path is the file_id
+                if self.execution_mode == "local":
+                    # Extract file_id from path
+                    file_id = Path(file_path).stem.split("_")[0] if "_" in Path(file_path).stem else Path(file_path).stem
+                    return GeneratedImage(url=file_path, file_id=file_id)
+                else:
+                    # For remote mode, need to upload cached file
+                    file_id = await self.upload_local_file_if_needed(file_path, "image")
+                    return GeneratedImage(url=file_path, file_id=file_id)
+
+        # Cache miss - generate new image
+        logger.info("Cache MISS for image - generating...")
         image_url = await self.generate_image_together(prompt, negative_prompt=negative_prompt)
         file_id = await self.upload_image_from_url(image_url)
+
+        # Store in cache
+        if self.cache and self.execution_mode == "local":
+            # For local mode, cache the downloaded file
+            file_path = self._local_storage.get_media_path(file_id)
+            self.cache.put("image", cache_key, file_path, {"prompt": prompt, "negative_prompt": negative_prompt})
 
         return GeneratedImage(url=image_url, file_id=file_id)
 
@@ -246,13 +301,32 @@ class MediaService:
         Returns:
             File ID of generated audio
         """
-        logger.info(f"Generating TTS locally: {text[:100]}...")
-
-        # Determine engine
+        # Determine engine and build cache key
         if voice_config:
             engine = voice_config.get("engine", "kokoro")
         else:
             engine = getattr(settings, "tts_engine", "kokoro")
+
+        # Build cache key from text + voice config
+        import json
+        config_str = json.dumps(voice_config, sort_keys=True) if voice_config else ""
+        cache_key = f"{text}|{engine}|{config_str}"
+
+        # Check cache first
+        if self.cache:
+            cached = self.cache.get("tts", cache_key)
+            if cached:
+                file_path, metadata = cached
+                logger.info(f"Cache HIT for TTS: {metadata['match_type']} match")
+                # Copy cached file to storage with new file_id
+                import shutil
+                file_id, new_file_path = self._local_storage.create_media_filename_with_id("audio", ".wav")
+                shutil.copy2(file_path, new_file_path)
+                logger.info(f"Copied cached file to: {file_id}")
+                return file_id
+
+        # Cache miss - generate new TTS
+        logger.info(f"Cache MISS for TTS - generating locally: {text[:100]}...")
 
         # Create output file
         file_id, file_path = self._local_storage.create_media_filename_with_id("audio", ".wav")
@@ -291,6 +365,11 @@ class MediaService:
             )
 
         logger.info(f"TTS generated locally: {file_id}")
+
+        # Store in cache
+        if self.cache:
+            self.cache.put("tts", cache_key, file_path, {"text": text, "engine": engine, "voice_config": voice_config})
+
         return file_id
 
     def _generate_captioned_video_local(

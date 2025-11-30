@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(python test_integration.py:*)"
     ],
     "deny": [],
     "ask": []

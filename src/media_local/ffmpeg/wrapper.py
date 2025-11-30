@@ -481,3 +481,320 @@ class MediaUtils:
                 f"Error executing ffprobe command for {operation_name}"
             )
             return False, "", str(e)
+
+    def extract_frame(
+        self,
+        video_path: str | Path,
+        output_path: str | Path,
+        time_seconds: float = 0.0,
+    ) -> bool:
+        """
+        Extracts a frame from a video at a specified time.
+
+        Args:
+            video_path: Path to the input video file
+            output_path: Path for the extracted frame image
+            time_seconds: Time in seconds to extract the frame (default: 0.0)
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Base command
+            cmd = [self.ffmpeg_path, "-y"]
+
+            # Add input video file
+            cmd.extend(["-i", str(video_path)])
+
+            # Seek to the specified time and extract one frame
+            cmd.extend(
+                [
+                    "-ss",
+                    str(time_seconds),  # Seek to time
+                    "-vframes",
+                    "1",  # Extract only one frame
+                    "-q:v",
+                    "2",  # High quality (scale 1-31, lower is better)
+                    str(output_path),
+                ]
+            )
+
+            # Execute the command using the new method
+            success = self.execute_ffmpeg_command(
+                cmd,
+                "extract frame",
+                show_progress=False,  # No progress tracking for single frame extraction
+            )
+
+            if success:
+                logger.bind(video_path=str(video_path), time_seconds=time_seconds).debug(
+                    "frame extracted successfully"
+                )
+                return True
+            else:
+                logger.bind(video_path=str(video_path), time_seconds=time_seconds).error(
+                    "FFmpeg failed to extract frame"
+                )
+                return False
+
+        except Exception as e:
+            logger.bind(error=str(e)).error("Error extracting frame")
+            return False
+
+    def extract_frames(
+        self,
+        video_path: str | Path,
+        output_template: str,
+        amount: int = 5,
+        length_seconds: float = None,
+    ) -> bool:
+        """
+        Extract multiple frames from a video at regular intervals.
+
+        Args:
+            video_path: Path to the input video file
+            output_template: Template for output image files (e.g., "frame-%03d.jpg")
+            amount: Number of frames to extract (default: 5)
+            length_seconds: Length of the video in seconds (optional, if not provided will be calculated)
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Get video duration if not provided
+            if length_seconds is None:
+                video_info = self.get_video_info(video_path)
+                length_seconds = video_info.get("duration", 0)
+
+            if length_seconds <= 0:
+                logger.error("invalid video duration for frame extraction")
+                return False
+
+            # Calculate frame interval (time between frames)
+            # This gives us the correct fps rate to extract exactly 'amount' frames
+            # evenly distributed across the video duration
+            frame_interval = length_seconds / amount
+
+            # Base command - using the corrected fps calculation
+            # fps=1/frame_interval extracts one frame every frame_interval seconds
+            cmd = [
+                self.ffmpeg_path,
+                "-y",
+                "-i",
+                str(video_path),
+                "-vf",
+                f"fps=1/{frame_interval}",
+                "-vframes",
+                str(amount),
+                "-qscale:v",
+                "2",  # High quality
+                output_template,
+            ]
+
+            # Execute the command using the new method
+            success = self.execute_ffmpeg_command(
+                cmd,
+                "extract frames",
+                show_progress=False,
+            )
+
+            if success:
+                logger.bind(
+                    video_path=str(video_path),
+                    amount=amount,
+                    frame_interval=frame_interval,
+                ).debug("frames extracted successfully")
+                return True
+            else:
+                logger.error("FFmpeg failed to extract frames")
+                return False
+
+        except Exception as e:
+            logger.bind(error=str(e)).error("Error extracting frames")
+            return False
+
+    @staticmethod
+    def is_hex_color(color: str) -> bool:
+        """
+        Checks if the given color string is a valid hex color.
+
+        Args:
+            color: Color string to check
+
+        Returns:
+            bool: True if it's a hex color, False otherwise
+        """
+        return all(c in "0123456789abcdefABCDEF" for c in color[1:])
+
+    def colorkey_overlay(
+        self,
+        input_video_path: str | Path,
+        overlay_video_path: str | Path,
+        output_video_path: str | Path,
+        color: str = "green",
+        similarity: float = 0.1,
+        blend: float = 0.1,
+    ):
+        """
+        Applies a colorkey overlay to a video using FFmpeg.
+
+        Args:
+            input_video_path: Path to base video
+            overlay_video_path: Path to overlay video with chroma key
+            output_video_path: Path for output video
+            color: Color to key out (hex or name, default: green)
+            similarity: Color similarity threshold (0.0-1.0)
+            blend: Blend amount (0.0-1.0)
+
+        Example command:
+            ffmpeg -i input.mp4 -stream_loop -1 -i black_dust.mp4 \
+            -filter_complex "[1]colorkey=0x000000:0.1:0.1[ckout];[0][ckout]overlay" \
+            -shortest \
+            -c:v libx264 -preset ultrafast -crf 18 \
+            -c:a copy \
+            output.mp4
+        """
+
+        start = time.time()
+        info = self.get_video_info(input_video_path)
+        video_duration = info.get("duration", 0)
+
+        if not video_duration:
+            logger.error("failed to get video duration from input video")
+            return False
+
+        color = color.lstrip("#")
+        if self.is_hex_color(color):
+            color = f"0x{color.upper()}"
+
+        context_logger = logger.bind(
+            input_video_path=str(input_video_path),
+            overlay_video_path=str(overlay_video_path),
+            output_video_path=str(output_video_path),
+            video_duration=video_duration,
+            color=color,
+            similarity=similarity,
+            blend=blend,
+        )
+        context_logger.debug("Starting colorkey overlay process")
+
+        cmd = [
+            self.ffmpeg_path,
+            "-y",
+            "-i",
+            str(input_video_path),
+            "-stream_loop",
+            "-1",
+            "-i",
+            str(overlay_video_path),
+            "-filter_complex",
+            f"[1]colorkey={color}:{similarity}:{blend}[ckout];[0][ckout]overlay",
+            "-shortest",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-crf",
+            "18",
+            "-c:a",
+            "copy",
+            str(output_video_path),
+        ]
+
+        try:
+            success = self.execute_ffmpeg_command(
+                cmd,
+                "colorkey overlay",
+                expected_duration=video_duration,
+                show_progress=True,
+            )
+
+            if success:
+                context_logger.bind(execution_time=time.time() - start).debug(
+                    "Colorkey overlay successful"
+                )
+                return True
+            else:
+                context_logger.error("FFmpeg failed to apply colorkey overlay")
+                return False
+
+        except Exception as e:
+            context_logger.bind(error=str(e)).error("Error applying colorkey overlay")
+            return False
+
+    def convert_pcm_to_wav(
+        self,
+        input_pcm_path: str | Path,
+        output_wav_path: str | Path,
+        sample_rate: int = 24000,
+        channels: int = 1,
+        target_sample_rate: int = 44100,
+    ) -> bool:
+        """
+        Convert PCM audio to WAV format.
+
+        Args:
+            input_pcm_path: Path to input PCM file
+            output_wav_path: Path for output WAV file
+            sample_rate: Input sample rate (default: 24000)
+            channels: Input channels (default: 1)
+            target_sample_rate: Output sample rate (default: 44100)
+
+        Returns:
+            bool: True if successful, False otherwise
+
+        Example command:
+            ffmpeg -f s16le -ar 24000 -ac 1 -i out.pcm -ar 44100 -ac 2 out_44k_stereo.wav
+        """
+        start = time.time()
+        context_logger = logger.bind(
+            input_pcm_path=str(input_pcm_path),
+            output_wav_path=str(output_wav_path),
+            sample_rate=sample_rate,
+            channels=channels,
+            target_sample_rate=target_sample_rate,
+        )
+        context_logger.debug("Starting PCM to WAV conversion")
+
+        cmd = [
+            self.ffmpeg_path,
+            "-y",
+            "-f",
+            "s16le",
+            "-ar",
+            str(sample_rate),
+            "-ac",
+            str(channels),
+            "-i",
+            str(input_pcm_path),
+            "-ar",
+            str(target_sample_rate),
+            "-ac",
+            "2",  # Convert to stereo
+            str(output_wav_path),
+        ]
+
+        try:
+            success = self.execute_ffmpeg_command(
+                cmd,
+                "convert PCM to WAV",
+                show_progress=False,
+            )
+
+            if success:
+                context_logger.bind(execution_time=time.time() - start).debug(
+                    "PCM to WAV conversion successful",
+                )
+                return True
+            else:
+                context_logger.error("ffmpeg failed to convert PCM to WAV")
+                return False
+
+        except Exception as e:
+            context_logger.bind(error=str(e)).error(
+                "error converting PCM to WAV",
+            )
+            return False
+
+
+__all__ = ["MediaUtils"]

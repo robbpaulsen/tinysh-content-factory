@@ -17,20 +17,65 @@ logger = logging.getLogger(__name__)
 
 
 class MediaService:
-    """Service for media processing via local server."""
+    """Service for media processing via local server or local modules.
 
-    def __init__(self, base_url: str | None = None):
+    Supports two execution modes:
+    - 'remote': Uses HTTP API to communicate with Docker server (default)
+    - 'local': Uses local media_local modules directly (faster, no HTTP overhead)
+    """
+
+    def __init__(self, base_url: str | None = None, execution_mode: str = "remote"):
         """
         Initialize media service.
 
         Args:
             base_url: Base URL of media server (defaults to settings.media_server_url)
+            execution_mode: 'remote' (HTTP API) or 'local' (direct modules)
         """
+        self.execution_mode = execution_mode
         self.base_url = (base_url or settings.media_server_url).rstrip("/")
         self.client = httpx.AsyncClient(timeout=settings.http_timeout)
         # Rate limiter for Together.ai FLUX: 6 images per minute
         self.flux_limiter = AsyncLimiter(6, 60)
-        logger.info(f"Initialized media service: {self.base_url}")
+
+        # Local execution components (lazy loaded)
+        self._local_storage = None
+        self._local_media_utils = None
+        self._local_kokoro_tts = None
+        self._local_chatterbox_tts = None
+        self._local_caption = None
+        self._local_video_builder = None
+
+        if execution_mode == "local":
+            logger.info(f"Initialized media service in LOCAL mode")
+            self._init_local_modules()
+        else:
+            logger.info(f"Initialized media service in REMOTE mode: {self.base_url}")
+
+    def _init_local_modules(self):
+        """Initialize local media processing modules."""
+        from src.media_local.storage.manager import StorageManager, MediaType
+        from src.media_local.ffmpeg.wrapper import MediaUtils
+        from src.media_local.tts.kokoro import KokoroTTS
+        from src.media_local.tts.chatterbox import ChatterboxTTS
+        from src.media_local.video.caption import Caption
+        from src.media_local.video.builder import VideoBuilder
+
+        # Initialize storage
+        storage_path = Path("./media_local_storage")
+        self._local_storage = StorageManager(str(storage_path))
+
+        # Initialize media utils
+        self._local_media_utils = MediaUtils()
+
+        # Initialize TTS engines (lazy - only when needed)
+        # self._local_kokoro_tts = KokoroTTS()
+        # self._local_chatterbox_tts = ChatterboxTTS()
+
+        # Initialize caption generator
+        self._local_caption = Caption()
+
+        logger.info("Local media modules initialized")
 
     async def close(self):
         """Close HTTP client."""
@@ -191,6 +236,63 @@ class MediaService:
 
         return GeneratedImage(url=image_url, file_id=file_id)
 
+    def _generate_tts_local(self, text: str, voice_config: dict | None = None) -> str:
+        """Generate TTS locally using media_local modules.
+
+        Args:
+            text: Text to convert to speech
+            voice_config: Optional voice configuration
+
+        Returns:
+            File ID of generated audio
+        """
+        logger.info(f"Generating TTS locally: {text[:100]}...")
+
+        # Determine engine
+        if voice_config:
+            engine = voice_config.get("engine", "kokoro")
+        else:
+            engine = getattr(settings, "tts_engine", "kokoro")
+
+        # Create output file
+        file_id, file_path = self._local_storage.create_media_filename_with_id("audio", ".wav")
+
+        if engine == "kokoro":
+            # Lazy load Kokoro TTS
+            if not self._local_kokoro_tts:
+                from src.media_local.tts.kokoro import KokoroTTS
+                self._local_kokoro_tts = KokoroTTS()
+
+            voice = voice_config.get("voice", "af_bella") if voice_config else getattr(settings, "kokoro_voice", "af_bella")
+            speed = voice_config.get("speed", 1.0) if voice_config else getattr(settings, "kokoro_speed", 1.0)
+
+            # Generate audio
+            self._local_kokoro_tts.generate(text, file_path, voice=voice, speed=speed)
+
+        else:  # chatterbox
+            # Lazy load Chatterbox TTS
+            if not self._local_chatterbox_tts:
+                from src.media_local.tts.chatterbox import ChatterboxTTS
+                self._local_chatterbox_tts = ChatterboxTTS()
+
+            exaggeration = voice_config.get("exaggeration", 0.5) if voice_config else getattr(settings, "chatterbox_exaggeration", 0.5)
+            cfg_weight = voice_config.get("cfg_weight", 0.5) if voice_config else getattr(settings, "chatterbox_cfg_weight", 0.5)
+            temperature = voice_config.get("temperature", 0.7) if voice_config else getattr(settings, "chatterbox_temperature", 0.7)
+            sample_path = voice_config.get("sample_path") if voice_config else getattr(settings, "chatterbox_voice_sample_id", None)
+
+            # Generate audio
+            self._local_chatterbox_tts.generate(
+                text=text,
+                output_path=file_path,
+                sample_audio_path=sample_path,
+                exaggeration=exaggeration,
+                cfg_weight=cfg_weight,
+                temperature=temperature
+            )
+
+        logger.info(f"TTS generated locally: {file_id}")
+        return file_id
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -209,6 +311,10 @@ class MediaService:
         Returns:
             File ID of generated audio
         """
+        # Use local execution if enabled
+        if self.execution_mode == "local":
+            return self._generate_tts_local(text, voice_config)
+
         logger.info(f"Generating TTS: {text[:100]}...")
 
         # Use voice_config if provided, otherwise fall back to settings

@@ -110,4 +110,9 @@ if TORCH_AVAILABLE:
     logger.debug("Patched torch.load with auto map_location")
 
 
-__all__ = ["device", "get_device_info", "TORCH_AVAILABLE"]
+# Whisper STT configuration
+whisper_model = os.environ.get("WHISPER_MODEL", "small")
+whisper_compute_type = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
+
+
+__all__ = ["device", "get_device_info", "TORCH_AVAILABLE", "whisper_model", "whisper_compute_type"]

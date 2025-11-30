@@ -244,12 +244,18 @@ def delete_file(file_id: str):
 def file_status(file_id: str):
     """
     Check the status of a file by its ID.
+    Priority: Check if real file exists first, then .tmp file.
     """
+    # Check if the actual file exists first (highest priority)
+    if storage.media_exists(file_id):
+        return {"status": "ready"}
+
+    # If real file doesn't exist, check if .tmp file exists
     tmp_id = storage.create_tmp_file_id(file_id)
     if storage.media_exists(tmp_id):
         return {"status": "processing"}
-    elif storage.media_exists(file_id):
-        return {"status": "ready"}
+
+    # Neither exists
     return {"status": "not_found"}
 
 

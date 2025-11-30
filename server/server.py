@@ -1,11 +1,11 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter
 import sys
-from loguru import logger
+from contextlib import asynccontextmanager
 
 from api_server.auth_middleware import auth_middleware
-from api_server.v1_utils_router import v1_utils_router
 from api_server.v1_media_router import v1_media_api_router
+from api_server.v1_utils_router import v1_utils_router
+from fastapi import APIRouter, FastAPI
+from loguru import logger
 from video.config import device
 
 logger.remove()

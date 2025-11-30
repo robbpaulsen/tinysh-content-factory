@@ -10,6 +10,7 @@ from aiolimiter import AsyncLimiter
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.config import settings
+from src.constants import TIMEOUT_TTS_GENERATION
 from src.models import GeneratedImage, GeneratedTTS, GeneratedVideo, MediaProcessingStatus
 
 logger = logging.getLogger(__name__)
@@ -264,7 +265,7 @@ class MediaService:
                 else:
                     files["sample_audio_id"] = (None, voice_sample)
 
-        response = await self.client.post(endpoint, files=files, timeout=120.0)
+        response = await self.client.post(endpoint, files=files, timeout=TIMEOUT_TTS_GENERATION)
         response.raise_for_status()
 
         data = response.json()
@@ -274,7 +275,7 @@ class MediaService:
 
         # Wait for background task to complete
         # TTS is the slowest operation, poll every 15 seconds
-        ready = await self.wait_for_file_ready(file_id, poll_interval=15.0, timeout=120.0)
+        ready = await self.wait_for_file_ready(file_id, poll_interval=15.0, timeout=TIMEOUT_TTS_GENERATION)
         if not ready:
             raise RuntimeError(f"TTS file {file_id} did not become ready in time")
 

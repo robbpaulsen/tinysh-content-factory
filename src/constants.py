@@ -12,7 +12,7 @@ POLL_INTERVAL_DEFAULT = 2.0  # Generic processing tasks
 
 # Timeouts (seconds)
 TIMEOUT_FILE_READY = 60.0  # Wait for file to be ready
-TIMEOUT_TTS_GENERATION = 120.0  # TTS can take up to 2 minutes
+TIMEOUT_TTS_GENERATION = 300.0  # TTS can take up to 5 minutes
 TIMEOUT_VIDEO_GENERATION = 300.0  # Video can take up to 5 minutes
 TIMEOUT_HTTP_DEFAULT = 30.0  # Standard HTTP request timeout
 

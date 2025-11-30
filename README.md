@@ -30,28 +30,50 @@ Reddit Stories → Google Sheets → Gemini (script) → Loop per scene:
 
 ## Prerequisites
 
+### Execution Modes
+
+The system supports **two execution modes**:
+
+#### 🚀 **Local Mode (NEW)** - Recommended
+- ✅ No Docker required
+- ✅ Direct Python execution (faster)
+- ✅ GPU acceleration (NVENC for video encoding)
+- ✅ Better debugging and control
+- ✅ Automatic model downloading
+
+**Requirements:**
+- Python 3.11+
+- FFmpeg installed
+- TTS models auto-download on first use
+- 8GB+ RAM, NVIDIA GPU recommended
+
+#### 🐳 **Remote Mode** - Legacy (Docker)
+- Uses HTTP API to communicate with Docker media server
+- Requires media server running on `http://localhost:8000`
+- Useful for distributed setups
+
 ### Required Services
 
-1. **Local Media Server**: Running on `http://localhost:8000` (or configure your own)
-   - Handles TTS generation (Kokoro/Chatterbox)
-   - Video processing with FFmpeg
-   - Caption generation
-   - File storage
-
-2. **API Keys**:
-   - Google Gemini API key
-   - Together.ai API key
-   - Google OAuth credentials (for Sheets & YouTube)
-   - Reddit (no API keys needed - uses public endpoints)
+**API Keys:**
+- Google Gemini API key
+- Together.ai API key
+- Google OAuth credentials (for Sheets & YouTube)
+- Reddit (no API keys needed - uses public endpoints)
 
 ### System Requirements
 
+**For Local Mode (recommended):**
 - Python 3.11+
 - `uv` package manager
-- Media server with:
-  - FFmpeg
-  - Kokoro TTS or Chatterbox TTS
-  - 4+ CPU cores, 8GB+ RAM recommended
+- FFmpeg (command-line tool)
+- 8GB+ RAM
+- NVIDIA GPU recommended (for NVENC encoding)
+- TTS models: Auto-downloaded on first use (1-2GB)
+
+**For Remote Mode (legacy):**
+- All of the above, plus:
+- Docker with media server container
+- Media server running on port 8000
 
 ## Installation
 
@@ -77,6 +99,30 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 uv pip install -e .
+
+# Install pip module (required for some dependencies)
+uv pip install pip
+```
+
+### 2.1 Install FFmpeg (Required for Local Mode)
+
+**Windows:**
+```bash
+# Using Chocolatey
+choco install ffmpeg
+
+# Or download from: https://ffmpeg.org/download.html
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux:**
+```bash
+sudo apt-get install ffmpeg  # Debian/Ubuntu
+sudo yum install ffmpeg      # RHEL/CentOS
 ```
 
 ### 3. Configuration
@@ -317,10 +363,16 @@ For detailed multi-channel documentation, see `.github/MULTI_CHANNEL_SYSTEM.md`.
 python -m src.main validate-config
 ```
 
-### Check Media Server
+### Check System Configuration
 
 ```bash
+# Check if running in local or remote mode
 python -m src.main check-server
+
+# Test local mode functionality
+python tests/test_integration_simple.py  # Quick initialization test
+python tests/test_integration.py         # Full TTS test
+python tests/test_video_local.py         # Video generation test
 ```
 
 ### List All Channels
@@ -391,6 +443,45 @@ python -m src.main generate-single abc123xyz
 # With specific channel
 python -m src.main generate-single abc123xyz --channel momentum_mindset
 ```
+
+## Execution Mode Configuration
+
+### Switching Between Local and Remote Mode
+
+The system automatically uses **Local Mode** by default. To switch modes, configure in your `.env`:
+
+```bash
+# Local Mode (default) - No Docker required
+MEDIA_EXECUTION_MODE=local
+
+# Remote Mode - Requires Docker media server
+MEDIA_EXECUTION_MODE=remote
+MEDIA_SERVER_URL=http://localhost:8000
+```
+
+### Local Mode Benefits
+
+**Performance:**
+- ✅ **5-10x faster** video encoding with GPU (NVENC)
+- ✅ **No HTTP overhead** - Direct function calls
+- ✅ **Better progress tracking** - Real-time FFmpeg output
+
+**Development:**
+- ✅ **Easier debugging** - Stack traces show full context
+- ✅ **No container management** - One less thing to maintain
+- ✅ **Hot reloading** - Code changes apply immediately
+
+**Cost:**
+- ✅ **Zero infrastructure** - No Docker, no containers
+- ✅ **Uses local GPU** - Free NVENC encoding
+
+### When to Use Remote Mode
+
+Use Remote Mode if you:
+- Already have a media server running
+- Need distributed processing across machines
+- Want to offload heavy processing to a dedicated server
+- Have existing Docker infrastructure
 
 ## Configuration Options
 
@@ -717,14 +808,36 @@ youtube-shorts-factory/
 
 ## Troubleshooting
 
-### Media Server Issues
+### Execution Mode Issues
 
+**Local Mode (Default):**
+```bash
+# Verify FFmpeg is installed
+ffmpeg -version
+
+# Check GPU availability (NVIDIA)
+nvidia-smi
+
+# Test TTS generation
+python tests/test_integration.py
+
+# Test video generation
+python tests/test_video_local.py
+```
+
+**Common Issues:**
+- **"No module named pip"**: Run `uv pip install pip`
+- **FFmpeg not found**: Install FFmpeg and add to PATH
+- **Models downloading slowly**: First run downloads 1-2GB (one-time)
+- **GPU not detected**: System falls back to CPU automatically
+
+**Remote Mode (Docker):**
 ```bash
 # Check if server is running
 python -m src.main check-server
 
-# Check server logs
-# (depends on your media server setup)
+# Check Docker container logs
+docker logs media-server
 ```
 
 ### Google OAuth Errors

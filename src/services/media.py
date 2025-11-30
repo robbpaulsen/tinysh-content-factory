@@ -293,6 +293,178 @@ class MediaService:
         logger.info(f"TTS generated locally: {file_id}")
         return file_id
 
+    def _generate_captioned_video_local(
+        self, image_id: str, tts_id: str, text: str, subtitle_config: dict | None = None
+    ) -> str:
+        """Generate captioned video locally using media_local modules.
+
+        Args:
+            image_id: Background image file_id
+            tts_id: TTS audio file_id
+            text: Text for captions
+            subtitle_config: Optional subtitle styling configuration
+
+        Returns:
+            File ID of generated video
+        """
+        logger.info(f"Generating captioned video locally: image={image_id}, tts={tts_id}")
+
+        # Lazy load video builder if needed
+        if not self._local_video_builder:
+            from src.media_local.video.builder import VideoBuilder
+
+            # Create builder with dimensions from settings
+            dimensions = (settings.image_width, settings.image_height)
+            self._local_video_builder = VideoBuilder(dimensions=dimensions)
+            self._local_video_builder.set_media_utils(self._local_media_utils)
+
+        # Get file paths from storage
+        image_path = self._local_storage.get_media_path(image_id)
+        audio_path = self._local_storage.get_media_path(tts_id)
+
+        # Create output video file
+        video_file_id, video_path = self._local_storage.create_media_filename_with_id("video", ".mp4")
+
+        # Generate subtitle file
+        subtitle_file_id, subtitle_path = self._local_storage.create_media_filename_with_id("video", ".ass")
+
+        # Parse subtitle config
+        config = subtitle_config or {}
+        font_size = config.get("font_size", 24)
+        font_color = config.get("color", "#FFFFFF")
+        font_name = config.get("font", "Arial")
+        font_bold = config.get("bold", True)
+        stroke_color = config.get("outline_color", "#000000")
+        stroke_size = config.get("outline_width", 3)
+        shadow_blur = config.get("shadow", 0)
+        max_lines = config.get("max_lines", 2)
+        max_length = config.get("max_length", 80)
+
+        # Map alignment (2=bottom, 5=top, 10=center)
+        align_num = config.get("alignment", 2)
+        position_map = {2: "bottom", 5: "top", 10: "center"}
+        subtitle_position = position_map.get(align_num, "bottom")
+
+        # Generate subtitle segments from text
+        # For simplicity, create basic captions - in a real scenario you'd use TTS-generated captions
+        # Create simple segments based on text
+        words = text.split()
+        segments = []
+        current_time = 0.0
+        words_per_segment = max_length // 10  # Rough estimate
+
+        for i in range(0, len(words), words_per_segment):
+            segment_words = words[i:i+words_per_segment]
+            segment_text = " ".join(segment_words)
+            duration = len(segment_text) * 0.05  # Rough estimate: 50ms per character
+
+            segments.append({
+                "text": segment_text,
+                "start_ts": current_time,
+                "end_ts": current_time + duration
+            })
+            current_time += duration
+
+        # Create subtitle file using Caption
+        dimensions = (settings.image_width, settings.image_height)
+        self._local_caption.create_subtitle(
+            segments=segments,
+            dimensions=dimensions,
+            output_path=subtitle_path,
+            font_size=font_size,
+            font_color=font_color,
+            font_name=font_name,
+            font_bold=font_bold,
+            stroke_color=stroke_color,
+            stroke_size=stroke_size,
+            shadow_blur=shadow_blur,
+            subtitle_position=subtitle_position
+        )
+
+        # Build video using VideoBuilder
+        self._local_video_builder.set_background_image(image_path)
+        self._local_video_builder.set_audio(audio_path)
+        self._local_video_builder.set_captions(subtitle_path, config={"style": {}})
+        self._local_video_builder.set_output_path(video_path)
+
+        # Execute video build
+        success = self._local_video_builder.execute()
+
+        if not success:
+            raise RuntimeError("Failed to generate video locally")
+
+        logger.info(f"Captioned video generated locally: {video_file_id}")
+        return video_file_id
+
+    def _merge_videos_local(
+        self,
+        video_ids: list[str],
+        background_music_id: str | None = None,
+        music_volume: float | None = None
+    ) -> str:
+        """Merge videos locally using media_local modules.
+
+        Args:
+            video_ids: List of video file_ids to merge
+            background_music_id: Optional background music file_id
+            music_volume: Optional music volume (0.0-1.0)
+
+        Returns:
+            File ID of merged video
+        """
+        logger.info(f"Merging {len(video_ids)} videos locally")
+
+        # Get video paths from storage
+        video_paths = [self._local_storage.get_media_path(vid) for vid in video_ids]
+
+        # Create output video file
+        output_file_id, output_path = self._local_storage.create_media_filename_with_id("video", ".mp4")
+
+        # Build concat file for FFmpeg
+        concat_file_id, concat_path = self._local_storage.create_media_filename_with_id("video", ".txt")
+        with open(concat_path, "w") as f:
+            for video_path in video_paths:
+                # FFmpeg concat format requires absolute paths on Windows with forward slashes
+                # Convert to absolute path first, then replace backslashes
+                abs_path = str(Path(video_path).absolute()).replace("\\", "/")
+                f.write(f"file '{abs_path}'\n")
+
+        # Build FFmpeg command
+        cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_path]
+
+        # Add background music if provided
+        if background_music_id:
+            music_path = self._local_storage.get_media_path(background_music_id)
+            volume = music_volume if music_volume is not None else 0.1
+
+            cmd.extend(["-i", music_path])
+            # Mix audio: video audio + background music
+            cmd.extend([
+                "-filter_complex",
+                f"[0:a]volume=1.0[a1];[1:a]volume={volume}[a2];[a1][a2]amix=inputs=2:duration=first[aout]",
+                "-map", "0:v", "-map", "[aout]",
+                "-c:v", "h264_nvenc", "-preset", "p4", "-cq", "23",
+                "-c:a", "aac", "-b:a", "128k"
+            ])
+        else:
+            # No music - just copy streams (much faster)
+            cmd.extend(["-c", "copy"])
+
+        cmd.append(output_path)
+
+        # Execute FFmpeg command
+        success = self._local_media_utils.execute_ffmpeg_command(
+            cmd,
+            "merge videos",
+            show_progress=True
+        )
+
+        if not success:
+            raise RuntimeError("Failed to merge videos locally")
+
+        logger.info(f"Videos merged locally: {output_file_id}")
+        return output_file_id
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -489,6 +661,10 @@ class MediaService:
         Returns:
             file_id (synchronous response)
         """
+        # Use local execution if enabled
+        if self.execution_mode == "local":
+            return self._generate_captioned_video_local(image_id, tts_id, text, subtitle_config)
+
         logger.info(f"Starting captioned video generation: image={image_id}, tts={tts_id}")
 
         # Use files= for multipart/form-data (like curl -F)
@@ -603,6 +779,10 @@ class MediaService:
         Returns:
             file_id (synchronous response)
         """
+        # Use local execution if enabled
+        if self.execution_mode == "local":
+            return self._merge_videos_local(video_ids, background_music_id, music_volume)
+
         logger.info(f"Starting video merge: {len(video_ids)} videos")
 
         # Convert list to comma-separated string and use files= for multipart/form-data

@@ -229,3 +229,7 @@ docs/legacy/workflow_youtube_shorts/*.json
 !scripts/.gitkeep
 !tests/.gitkeep
 bulk-gen-wisdom.ps1
+media_local_storage/cache/cache.db
+media_local_storage/video/*.ass
+media_local_storage/video/*.txt
+!media_local_storage/.gitkeep

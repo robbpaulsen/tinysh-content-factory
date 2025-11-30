@@ -10,6 +10,7 @@ from aiolimiter import AsyncLimiter
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.config import settings
+from src.quality_presets import QualityLevel, get_preset
 from src.constants import TIMEOUT_TTS_GENERATION
 from src.models import GeneratedImage, GeneratedTTS, GeneratedVideo, MediaProcessingStatus
 from src.services.cache import AssetCache
@@ -25,7 +26,13 @@ class MediaService:
     - 'local': Uses local media_local modules directly (faster, no HTTP overhead)
     """
 
-    def __init__(self, base_url: str | None = None, execution_mode: str = "remote", enable_cache: bool = True):
+    def __init__(
+        self,
+        base_url: str | None = None,
+        execution_mode: str = "remote",
+        enable_cache: bool = True,
+        quality_level: QualityLevel = "production"
+    ):
         """
         Initialize media service.
 
@@ -33,12 +40,18 @@ class MediaService:
             base_url: Base URL of media server (defaults to settings.media_server_url)
             execution_mode: 'remote' (HTTP API) or 'local' (direct modules)
             enable_cache: Whether to enable smart caching (default: True)
+            quality_level: Quality preset (draft/preview/production, default: production)
         """
         self.execution_mode = execution_mode
         self.base_url = (base_url or settings.media_server_url).rstrip("/")
         self.client = httpx.AsyncClient(timeout=settings.http_timeout)
         # Rate limiter for Together.ai FLUX: 6 images per minute
         self.flux_limiter = AsyncLimiter(6, 60)
+
+        # Quality preset configuration
+        self.quality_level = quality_level
+        self.quality_preset = get_preset(quality_level)
+        logger.info(f"Quality preset: {self.quality_preset.name} - {self.quality_preset.description}")
 
         # Local execution components (lazy loaded)
         self._local_storage = None
@@ -194,9 +207,9 @@ class MediaService:
         payload = {
             "model": settings.flux_model,
             "prompt": prompt,
-            "width": settings.image_width,
-            "height": settings.image_height,
-            "steps": 4,  # FLUX Schnell uses 4 steps
+            "width": self.quality_preset.image.width,
+            "height": self.quality_preset.image.height,
+            "steps": self.quality_preset.image.steps,
         }
         
         # Add negative_prompt parameter if provided
@@ -338,7 +351,9 @@ class MediaService:
                 self._local_kokoro_tts = KokoroTTS()
 
             voice = voice_config.get("voice", "af_bella") if voice_config else getattr(settings, "kokoro_voice", "af_bella")
-            speed = voice_config.get("speed", 1.0) if voice_config else getattr(settings, "kokoro_speed", 1.0)
+            base_speed = voice_config.get("speed", 1.0) if voice_config else getattr(settings, "kokoro_speed", 1.0)
+            # Apply quality preset speed multiplier
+            speed = base_speed * self.quality_preset.tts.speed
 
             # Generate audio
             self._local_kokoro_tts.generate(text, file_path, voice=voice, speed=speed)
@@ -392,8 +407,8 @@ class MediaService:
         if not self._local_video_builder:
             from src.media_local.video.builder import VideoBuilder
 
-            # Create builder with dimensions from settings
-            dimensions = (settings.image_width, settings.image_height)
+            # Create builder with dimensions from quality preset
+            dimensions = (self.quality_preset.image.width, self.quality_preset.image.height)
             self._local_video_builder = VideoBuilder(dimensions=dimensions)
             self._local_video_builder.set_media_utils(self._local_media_utils)
 

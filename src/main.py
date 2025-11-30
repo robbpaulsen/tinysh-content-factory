@@ -163,7 +163,14 @@ def update_stories(channel: str | None, subreddit: str | None, limit: int):
     default=None,
     help="Voice/music profile to use (default: from channel config)",
 )
-def generate(channel: str | None, count: int, update: bool, profile: str | None):
+@click.option(
+    "--quality",
+    "-q",
+    default="production",
+    type=click.Choice(["draft", "preview", "production"], case_sensitive=False),
+    help="Quality preset: draft (4x faster), preview (2x faster), or production (full quality)",
+)
+def generate(channel: str | None, count: int, update: bool, profile: str | None, quality: str):
     """Generate videos from stories in Google Sheets."""
     from src.channel_config import ChannelConfig
 
@@ -185,9 +192,13 @@ def generate(channel: str | None, count: int, update: bool, profile: str | None)
             console.print(f"[red]✗ Failed to load channel '{channel_name}': {e}[/red]")
             return
 
+        # Show quality preset info
+        console.print(f"[cyan]Quality preset: {quality}[/cyan]")
+
         orchestrator = WorkflowOrchestrator(
             channel_config=channel_config,
-            profile=profile
+            profile=profile,
+            quality_level=quality.lower()
         )
         try:
             await orchestrator.run_complete_workflow(

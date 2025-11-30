@@ -29,13 +29,19 @@ console = Console()
 class WorkflowOrchestrator:
     """Orchestrates the complete YouTube Shorts generation workflow."""
 
-    def __init__(self, channel_config: "ChannelConfig | None" = None, profile: str | None = None):
+    def __init__(
+        self,
+        channel_config: "ChannelConfig | None" = None,
+        profile: str | None = None,
+        quality_level: str = "production"
+    ):
         """
         Initialize all services.
 
         Args:
             channel_config: Channel configuration (optional, uses default if None)
             profile: Voice/music profile ID (uses default from channel/profiles.yaml if None)
+            quality_level: Quality preset (draft/preview/production, default: production)
         """
         from src.channel_config import ChannelConfig
 
@@ -84,7 +90,12 @@ class WorkflowOrchestrator:
 
         self.sheets = GoogleSheetsService(sheet_name=sheet_tab)
         self.llm = LLMService(channel_config=self.channel_config)
-        self.media = MediaService()
+        # Initialize media service with quality preset
+        self.media = MediaService(
+            execution_mode=settings.execution_mode,
+            enable_cache=True,
+            quality_level=quality_level
+        )
 
         # Initialize YouTube with channel-specific credentials if available
         if self.channel_config:
